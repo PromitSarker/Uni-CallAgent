@@ -49,7 +49,7 @@ LIVE_TOOL_DECLARATIONS = [
 	},
 	{
 		"name": "save_collected_information",
-		"description": "Save pieces of information gathered from the user (e.g., for bulk message services, lead gen, etc). Pass a dictionary mapping the exact requested keys to the user's provided values.",
+		"description": "Save pieces of information gathered from the user (e.g., for IT services, lead gen, etc). Pass a dictionary mapping the exact requested keys to the user's provided values.",
 		"parameters": {
 			"type": "OBJECT",
 			"properties": {

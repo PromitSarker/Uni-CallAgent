@@ -1,6 +1,6 @@
 # Unified IT Agent Architecture
 
-This system is a message-only chat assistant for Unified IT, a bulk message services provider (masking and non-masking SMS). FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
+This system is a message-only chat assistant for Unified IT, a premium IT services and cloud solutions provider. FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
 
 ## 1.1 System Overview
 
@@ -37,12 +37,12 @@ flowchart TD
 ## 1.2 Conversation Flow Example
 
 Guest message:
-"I want to buy 10,000 non-masking SMS for my business."
+"I want to sign up for a Cloud Server for my business."
 
 1. Client calls POST /api/chat/{conversation_id}/message with the message.
 2. FastAPI appends the user text to conversation history and invokes LangGraph.
 3. `call_model_node` sends the text to Groq Cloud. The model determines it should gather details for lead generation.
-4. The model uses `save_collected_information` to store the desired SMS volume and type in the database.
+4. The model uses `save_collected_information` to store the desired service type in the database.
 5. The model responds directly asking for the business name and contact info.
 6. As the conversation progresses, `summarize_conversation_node` compresses older messages into a `session_summary` to save LLM tokens.
 

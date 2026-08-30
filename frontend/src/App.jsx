@@ -432,7 +432,7 @@ function App() {
           >
             <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
             <h2>How can I help you today?</h2>
-            <p>Ask about masking SMS, pricing, or our API features.</p>
+            <p>Ask about Web Hosting, Cloud Servers, or our API features.</p>
             <div style={{ marginTop: '24px' }}>
               {actionButtons}
             </div>

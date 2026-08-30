@@ -52,7 +52,7 @@ Request:
 
 ```json
 {
-  "message": "What is the difference between masking and non-masking SMS?"
+  "message": "What is the difference between Web Hosting and a Cloud Server?"
 }
 ```
 
@@ -62,15 +62,15 @@ Response:
 {
   "conversation_id": "conv-rt-0001",
   "intent": "inquiry",
-  "assistant_response": "Masking SMS displays a custom sender name (like your brand name) instead of a phone number, which is great for official alerts. Non-masking SMS displays a standard number and is usually more affordable. Would you like to know the pricing for either?",
+  "assistant_response": "Web Hosting is a shared environment where multiple websites share the same server resources, making it cost-effective for smaller sites. A Cloud Server provides dedicated resources and greater scalability for growing businesses. Would you like to know the pricing for either?",
   "escalate": false,
-  "tool_result": "Masking SMS allows businesses to send messages using an alphanumeric sender ID (e.g., 'YOURBRAND'). Non-masking uses a standard numeric sender.",
+  "tool_result": "Web Hosting provides shared resources on a single server, while a Cloud Server provides dedicated, scalable resources in a virtualized environment.",
   "state": {
     "extracted_params": {
-      "query": "difference between masking and non-masking SMS"
+      "query": "difference between Web Hosting and a Cloud Server"
     },
     "missing_fields": [],
-    "final_response": "Masking SMS displays a custom sender name..."
+    "final_response": "Web Hosting is a shared environment..."
   },
   "timestamp": "2026-07-14T16:20:00Z"
 }
