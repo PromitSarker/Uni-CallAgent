@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { AudioQueue } from './utils/audioQueue';
@@ -447,7 +447,7 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <div className={`avatar ${msg.role}`}>
-                {msg.role === 'user' ? 'U' : 'RT'}
+                {msg.role === 'user' ? 'U' : <Bot size={20} />}
               </div>
               <div className="message-bubble">
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -463,7 +463,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="avatar assistant">RT</div>
+            <div className="avatar assistant"><Bot size={20} /></div>
             <div className="message-bubble typing-indicator">
               <div className="typing-dot"></div>
               <div className="typing-dot"></div>

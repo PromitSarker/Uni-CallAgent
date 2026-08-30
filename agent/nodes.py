@@ -368,7 +368,10 @@ RULES:
 				content = "The user's details were securely saved to the database. Acknowledge this naturally and proceed to the next step."
 			clean_messages.append(SystemMessage(content=f"System Info: {content}"))
 		elif isinstance(m, AIMessage):
-			clean_content = _extract_text(m.content) if m.content else ""
+			if getattr(m, "tool_calls", None):
+				clean_content = ""
+			else:
+				clean_content = _extract_text(m.content) if m.content else ""
 			clean_messages.append(AIMessage(content=clean_content.strip() or "Processed action."))
 		else:
 			clean_messages.append(m)
