@@ -459,9 +459,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="welcome-icon">
-              <Sparkles size={24} />
-            </div>
+            <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
             <h2>Welcome to Unified IT</h2>
             <p>How can I help you with your IT services today?</p>
             

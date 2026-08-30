@@ -199,17 +199,15 @@ body {
   margin-top: -5vh; /* visually center slightly higher */
 }
 
-.welcome-icon {
-  background: var(--white);
-  border-radius: 50%;
-  width: 48px;
+.empty-state-logo {
   height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  color: var(--primary-blue);
+  width: auto;
   margin-bottom: 24px;
+  object-fit: contain;
+  transition: transform 0.4s ease;
+}
+.empty-state-logo:hover {
+  transform: scale(1.05);
 }
 
 .empty-state h2 {
