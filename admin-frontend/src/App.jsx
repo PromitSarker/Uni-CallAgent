@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, FileText, Send, Database, AlertCircle, CheckCircle, DollarSign, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Send, Database, AlertCircle, CheckCircle, DollarSign, Settings, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Do not hard-code localhost: it points at the administrator's own computer
 // when this panel is opened from another device.
@@ -212,20 +213,39 @@ function DashboardView() {
         )}
       </div>
 
-      {selectedSummary && (
-        <div className="modal-overlay" onClick={() => setSelectedSummary(null)}>
-          <div className="modal-content glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '16px' }}>Conversation Summary</h3>
-            <div 
-              style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: 'var(--text-main)', fontSize: '0.95rem' }}
-              dangerouslySetInnerHTML={{ __html: selectedSummary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-            />
-            <div style={{ marginTop: '24px', textAlign: 'right' }}>
-              <button className="btn" onClick={() => setSelectedSummary(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedSummary && (
+          <motion.div 
+            className="modal-overlay" 
+            onClick={() => setSelectedSummary(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="modal-content glass-card" 
+              onClick={e => e.stopPropagation()} 
+              style={{ maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto' }}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
+            >
+              <button className="modal-close" onClick={() => setSelectedSummary(null)}>
+                <X size={20} />
+              </button>
+              <h3 className="modal-title">Conversation Summary</h3>
+              <div 
+                className="summary-content"
+                dangerouslySetInnerHTML={{ __html: selectedSummary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
+              />
+              <div style={{ marginTop: '24px', textAlign: 'right' }}>
+                <button className="btn btn-outline" onClick={() => setSelectedSummary(null)}>Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

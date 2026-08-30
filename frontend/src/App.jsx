@@ -481,11 +481,11 @@ function App() {
               className="mic-button recording"
               style={{
                 width: '80px', height: '80px', borderRadius: '50%',
-                backgroundColor: '#ef4444',
+                background: 'var(--brand-gradient)',
                 color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                boxShadow: '0 0 20px rgba(239, 68, 68, 0.6)',
+                boxShadow: '0 0 25px rgba(102, 45, 145, 0.4)',
               }}
-              animate={{ scale: [1, 1.1, 1] }}
+              animate={{ scale: [1, 1.15, 1] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
             >
               <Mic size={32} />
