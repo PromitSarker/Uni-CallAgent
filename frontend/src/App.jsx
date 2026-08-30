@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { AudioQueue } from './utils/audioQueue';
@@ -439,11 +439,16 @@ function App() {
 
   return (
     <div className="app-container">
+      <div className="ambient-aurora">
+        <div className="aurora-blob primary"></div>
+        <div className="aurora-blob secondary"></div>
+      </div>
+
       <header className="header">
         <div className="header-brand">
           <img src="/logo.png" alt="Unified IT Logo" className="brand-logo" />
         </div>
-        {(messages.length > 0 || isCallActive) && actionButtons}
+        {actionButtons}
       </header>
 
       <main className="chat-container">
@@ -461,24 +466,65 @@ function App() {
             <p>How can I help you with your IT services today?</p>
             
             <div className="suggestion-cards">
-              <div className="suggestion-card">
-                <Server className="card-icon" size={24} />
+              <motion.div 
+                className="suggestion-card blue" 
+                onClick={() => handleQuickSend("Tell me more about Web Hosting options.")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                <div className="card-header">
+                  <Server className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
                 <h3 className="card-title">Web Hosting</h3>
                 <p className="card-desc">Reliable and fast web hosting solutions for your business.</p>
-                <button className="card-btn" onClick={() => handleQuickSend("Tell me more about Web Hosting options.")}>Explore Hosting</button>
-              </div>
-              <div className="suggestion-card">
-                <Database className="card-icon" size={24} />
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card orange" 
+                onClick={() => handleQuickSend("What cloud server solutions do you provide?")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                <div className="card-header">
+                  <Database className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
                 <h3 className="card-title">Cloud Servers</h3>
                 <p className="card-desc">Scalable VPS and dedicated cloud servers for high performance.</p>
-                <button className="card-btn" onClick={() => handleQuickSend("What cloud server solutions do you provide?")}>View Servers</button>
-              </div>
-              <div className="suggestion-card">
-                <Cpu className="card-icon" size={24} />
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card purple" 
+                onClick={() => handleQuickSend("How can you help with custom AI development?")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+              >
+                <div className="card-header">
+                  <Cpu className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
                 <h3 className="card-title">AI Development</h3>
                 <p className="card-desc">Custom AI, SaaS, and PaaS solutions tailored to your needs.</p>
-                <button className="card-btn" onClick={() => handleQuickSend("How can you help with custom AI development?")}>Learn More</button>
-              </div>
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card teal" 
+                onClick={() => handleQuickSend("Tell me about your API integrations.")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+              >
+                <div className="card-header">
+                  <Code className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
+                <h3 className="card-title">API Integrations</h3>
+                <p className="card-desc">Seamless API solutions to connect your enterprise tools.</p>
+              </motion.div>
             </div>
           </motion.div>
         ) : (
