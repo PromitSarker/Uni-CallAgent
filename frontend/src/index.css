@@ -186,7 +186,7 @@ body {
 }
 
 .avatar.assistant {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #1c7a82 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #662D91 100%);
 }
 
 .message-bubble {
@@ -301,7 +301,7 @@ body {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  background: linear-gradient(135deg, var(--primary-color) 0%, #1c7a82 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #662D91 100%);
   color: var(--white);
   border: none;
   border-radius: 50%;
