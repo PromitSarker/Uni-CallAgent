@@ -1,1 +1,1 @@
-"""RT Communication FastAPI package."""
+"""Unified IT FastAPI package."""

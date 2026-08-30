@@ -1,8 +1,8 @@
-# RT Communication API Contract
+# Unified IT API Contract
 
 ## Purpose
 
-This document defines the HTTP contract for chat-based customer interactions on top of the LangGraph workflow in the RT Communication agent.
+This document defines the HTTP contract for chat-based customer interactions on top of the LangGraph workflow in the Unified IT agent.
 
 ## Architecture Context
 

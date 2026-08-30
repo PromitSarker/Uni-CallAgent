@@ -417,7 +417,7 @@ function App() {
     <div className="app-container">
       <header className="header">
         <div className="header-brand">
-          <img src="/logo.png" alt="RT Communications Logo" className="brand-logo" />
+          <img src="/logo.png" alt="Unified IT Logo" className="brand-logo" />
         </div>
         {(messages.length > 0 || isCallActive) && actionButtons}
       </header>
@@ -430,7 +430,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <img src="/logo.png" alt="RT Communications Logo" className="empty-state-logo" />
+            <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
             <h2>How can I help you today?</h2>
             <p>Ask about masking SMS, pricing, or our API features.</p>
             <div style={{ marginTop: '24px' }}>

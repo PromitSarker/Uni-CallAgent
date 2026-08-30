@@ -1,6 +1,6 @@
-# RT Communication Agent Architecture
+# Unified IT Agent Architecture
 
-This system is a message-only chat assistant for RT Communication, a bulk message services provider (masking and non-masking SMS). The client sends only one text message per turn. FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
+This system is a message-only chat assistant for Unified IT, a bulk message services provider (masking and non-masking SMS). FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
 
 ## 1.1 System Overview
 

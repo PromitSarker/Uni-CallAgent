@@ -22,7 +22,7 @@ VOICE_PERSONA_PROMPT = """
 
 --- VOICE CALL PERSONA ---
 
-You are the voice receptionist of RT Communication. You are currently on a live phone call with a customer.
+You are the voice receptionist of Unified IT. You are currently on a live phone call with a customer.
 
 PERSONALITY:
 - You are a calm, composed, and intelligent young woman.
@@ -80,22 +80,22 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     language_configs = {
         "Bengali": {
             "code": "bn-BD",
-            "greeting": "আসসালামুআলাইকুম! আরটি কমিউনিকেশনে কল করার জন্য ধন্যবাদ। কিভাবে আপনাকে সাহায্য করতে পারি?",
+            "greeting": "আসসালামুআলাইকুম! ইউনিফাইড আইটি তে কল করার জন্য ধন্যবাদ। কিভাবে আপনাকে সাহায্য করতে পারি?",
             "voice": "Leda" # Just use default or try to rely on what works
         },
         "English": {
             "code": "en-US",
-            "greeting": "Hello! Thank you for calling RT Communication. How can I help you today?",
+            "greeting": "Hello! Thank you for calling Unified IT. How can I help you today?",
             "voice": "Aoede"
         },
         "Spanish": {
             "code": "es-ES",
-            "greeting": "¡Hola! Gracias por llamar a RT Communication. ¿Cómo puedo ayudarle hoy?",
+            "greeting": "¡Hola! Gracias por llamar a Unified IT. ¿Cómo puedo ayudarle hoy?",
             "voice": "Aoede"
         },
         "Portuguese": {
             "code": "pt-PT",
-            "greeting": "Olá! Obrigado por ligar para a RT Communication. Como posso ajudá-lo hoje?",
+            "greeting": "Olá! Obrigado por ligar para a Unified IT. Como posso ajudá-lo hoje?",
             "voice": "Aoede"
         }
     }

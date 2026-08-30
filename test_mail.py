@@ -12,7 +12,7 @@ if not resend.api_key:
 resend_from = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 params = {
-    "from": f"RT Communication <{resend_from}>",
+    "from": f"Unified IT <{resend_from}>",
     "to": ["promitwho@gmail.com"],
     "subject": "Test Verification Code",
     "text": "Hello, this is a test verification code from your AI assistant!"

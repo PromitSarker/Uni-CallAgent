@@ -23,7 +23,7 @@ def search_knowledge_base(query: str) -> str:
 	"""
 	Search the knowledge base for general information, policies, or FAQs.
 	
-	Why it's needed: Use this when the user asks a general question about RT Communication, its services, policies, or pricing.
+	Why it's needed: Use this when the user asks a general question about Unified IT, its services, policies, or pricing.
 	"""
 	from agent.rag import search_documents
 	return search_documents(query)
@@ -37,7 +37,7 @@ class SaveCollectedInformationInput(BaseModel):
 @tool(args_schema=SaveCollectedInformationInput)
 def save_collected_information(data: Dict[str, str], session_id: str = "") -> str:
 	"""
-	Save pieces of information gathered from the user (e.g., for bulk message services, lead gen, etc).
+	Save pieces of information gathered from the user (e.g., for IT services, lead gen, etc).
 	Pass a dictionary mapping the exact requested keys to the user's provided values.
 	Do NOT provide session_id, it is injected automatically.
 	
@@ -102,10 +102,10 @@ def send_verification_email(email: str, session_id: str = "") -> str:
 			from agent.config import RESEND_FROM_EMAIL
 			resend.api_key = RESEND_API_KEY
 			params = {
-				"from": f"RT Communication <{RESEND_FROM_EMAIL}>",
+				"from": f"Unified IT <{RESEND_FROM_EMAIL}>",
 				"to": [email],
-				"subject": "RT Communication Verification Code",
-				"text": f"Hello,\n\nYour temporary password is: {code}\n\nIMPORTANT: This is a temporary password, and you need to change it immediately after you log in.\n\nThank you,\nRT Communication"
+				"subject": "Unified IT Verification Code",
+				"text": f"Hello,\n\nYour temporary password is: {code}\n\nIMPORTANT: This is a temporary password, and you need to change it immediately after you log in.\n\nThank you,\nUnified IT"
 			}
 			resend.Emails.send(params)
 			return "Verification code successfully sent to email."

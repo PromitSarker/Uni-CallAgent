@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
-  --primary-color: #30A3AE;
-  --primary-hover: #268992;
+  --primary-color: #1D7BBF;
+  --primary-hover: #165A8F;
   --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   --text-dark: #0f172a;
   --text-light: #64748b;
