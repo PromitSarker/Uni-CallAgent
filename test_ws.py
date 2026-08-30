@@ -3,7 +3,7 @@ import websockets
 import json
 
 async def test_websocket():
-    uri = "ws://localhost:8000/api/voice/ws/test-conversation-123"
+    uri = "ws://localhost:8001/api/voice/ws/test-conversation-123"
     print(f"Connecting to {uri}...")
     try:
         async with websockets.connect(uri) as websocket:

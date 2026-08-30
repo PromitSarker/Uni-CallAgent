@@ -3,7 +3,7 @@ import { LayoutDashboard, Users, FileText, Send, Database, AlertCircle, CheckCir
 
 // Do not hard-code localhost: it points at the administrator's own computer
 // when this panel is opened from another device.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:8000/api`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:8001/api`;
 
 async function getApiError(response) {
   const body = await response.json().catch(() => null);

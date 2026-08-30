@@ -2,7 +2,7 @@ services:
   api:
     build: .
     ports:
-      - "8001:8000"
+      - "8001:8001"
     volumes:
       - ./data:/app/data
       - ./chroma_db:/app/chroma_db
@@ -14,7 +14,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3003:3000"
+      - "3003:3003"
     restart: unless-stopped
     depends_on:
       - api
@@ -22,7 +22,7 @@ services:
   admin-frontend:
     build: ./admin-frontend
     ports:
-      - "3005:3001"
+      - "3005:3005"
     restart: unless-stopped
     depends_on:
       - api
