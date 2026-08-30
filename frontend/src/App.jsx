@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { AudioQueue } from './utils/audioQueue';
@@ -104,6 +104,30 @@ function App() {
   // ----------------------------------------------------
   // Text Chat Logic
   // ----------------------------------------------------
+  const handleQuickSend = async (text) => {
+    if (isLoading) return;
+    const userMessage = { role: 'user', content: text };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`/api/chat/${conversationId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.assistant_response }]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -430,11 +454,31 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
-            <h2>How can I help you today?</h2>
-            <p>Ask about Web Hosting, Cloud Servers, or our API features.</p>
-            <div style={{ marginTop: '24px' }}>
-              {actionButtons}
+            <div className="welcome-icon">
+              <Sparkles size={24} />
+            </div>
+            <h2>Welcome to Unified IT</h2>
+            <p>How can I help you with your IT services today?</p>
+            
+            <div className="suggestion-cards">
+              <div className="suggestion-card">
+                <Server className="card-icon" size={24} />
+                <h3 className="card-title">Web Hosting</h3>
+                <p className="card-desc">Reliable and fast web hosting solutions for your business.</p>
+                <button className="card-btn" onClick={() => handleQuickSend("Tell me more about Web Hosting options.")}>Explore Hosting</button>
+              </div>
+              <div className="suggestion-card">
+                <Database className="card-icon" size={24} />
+                <h3 className="card-title">Cloud Servers</h3>
+                <p className="card-desc">Scalable VPS and dedicated cloud servers for high performance.</p>
+                <button className="card-btn" onClick={() => handleQuickSend("What cloud server solutions do you provide?")}>View Servers</button>
+              </div>
+              <div className="suggestion-card">
+                <Cpu className="card-icon" size={24} />
+                <h3 className="card-title">AI Development</h3>
+                <p className="card-desc">Custom AI, SaaS, and PaaS solutions tailored to your needs.</p>
+                <button className="card-btn" onClick={() => handleQuickSend("How can you help with custom AI development?")}>Learn More</button>
+              </div>
             </div>
           </motion.div>
         ) : (
@@ -520,7 +564,7 @@ function App() {
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message here..."
+              placeholder="Write a message here..."
               disabled={isLoading || isUploading}
             />
             <motion.button 
