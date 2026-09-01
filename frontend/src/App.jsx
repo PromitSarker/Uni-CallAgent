@@ -20,6 +20,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [agentLanguage, setAgentLanguage] = useState('Bengali');
+  const [isFlying, setIsFlying] = useState(false);
   
   // CAPTCHA state
   const [isVerified, setIsVerified] = useState(() => {
@@ -131,6 +132,9 @@ function App() {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    setIsFlying(true);
+    setTimeout(() => setIsFlying(false), 600);
 
     const userMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -411,12 +415,15 @@ function App() {
       <motion.button 
         className={`new-chat-btn ${isCallActive ? 'active-voice-btn' : ''}`} 
         onClick={toggleCall} 
-        style={{ backgroundColor: isCallActive ? '#ef4444' : (isConnecting ? '#f59e0b' : '') }}
+        style={{ backgroundColor: isCallActive ? '#ef4444' : (isConnecting ? '#f59e0b' : ''), position: 'relative', overflow: 'hidden' }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        {isCallActive ? <PhoneOff size={18} /> : (isConnecting ? <Loader2 className="spin" size={18} /> : <Phone size={18} />)}
-        {isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}
+        {isConnecting && <div className="ripple-container"></div>}
+        <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {isCallActive ? <PhoneOff size={18} /> : (isConnecting ? <Loader2 className="spin" size={18} /> : <Phone size={18} />)}
+          {isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}
+        </span>
       </motion.button>
       <motion.button 
         className="new-chat-btn" 
@@ -530,9 +537,9 @@ function App() {
             <motion.div 
               key={index} 
               className={`message-wrapper ${msg.role}`}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
               <div className={`avatar ${msg.role}`}>
                 {msg.role === 'user' ? 'U' : <Bot size={20} />}
@@ -547,9 +554,9 @@ function App() {
         {isLoading && (
           <motion.div 
             className="message-wrapper assistant"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
           >
             <div className="avatar assistant"><Bot size={20} /></div>
             <div className="message-bubble typing-indicator">
@@ -613,7 +620,7 @@ function App() {
             />
             <motion.button 
               type="submit" 
-              className="send-btn" 
+              className={`send-btn ${isFlying ? 'flying' : ''}`} 
               disabled={!input.trim() || isLoading || isUploading}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
