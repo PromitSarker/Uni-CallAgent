@@ -126,6 +126,13 @@ body {
   filter: grayscale(0%) opacity(1);
 }
 
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
 .new-chat-btn {
   display: flex;
   align-items: center;
@@ -540,10 +547,32 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .header { padding: 16px 20px; }
-  .chat-container { padding: 20px 16px; }
+  .header {
+    flex-direction: column;
+    padding: 16px 20px;
+    gap: 16px;
+  }
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+  .action-buttons > * {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .chat-container { padding: 16px 12px; }
+  .message-wrapper { max-width: 95%; gap: 10px; }
+  .message-bubble { padding: 12px 16px; font-size: 0.95rem; }
+  
   .empty-state h2 { font-size: 1.75rem; }
-  .suggestion-cards { flex-direction: column; align-items: center; }
-  .suggestion-card { width: 100%; max-width: 320px; }
+  .empty-state-logo { height: 42px; margin-bottom: 20px; }
+  .suggestion-cards { flex-direction: column; align-items: center; width: 100%; }
+  .suggestion-card { width: 100%; max-width: 100%; padding: 16px; }
+  
+  .input-container { padding: 0 12px 20px 12px; }
   .input-form { padding: 4px 6px; }
+  .chat-input { padding: 10px 12px; font-size: 1rem; }
+  .send-btn { width: 36px; height: 36px; }
 }

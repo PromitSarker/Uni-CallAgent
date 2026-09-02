@@ -405,7 +405,7 @@ function App() {
   };
 
   const actionButtons = (
-    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
+    <div className="action-buttons">
       <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface-light)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border)', fontSize: '0.9rem' }}>
         <Globe size={16} color="var(--primary-light)" />
         <select 
