@@ -322,9 +322,16 @@ function App() {
         }
       };
 
-      ws.onclose = () => {
-        console.log("Voice WS closed");
+      ws.onclose = (event) => {
+        console.log("Voice WS closed", event.code, event.reason);
+        if (!hasAIPickedUpRef.current) {
+          alert("Call failed: Could not connect to the voice server. Please check your network or server configuration.");
+        }
         endCall();
+      };
+
+      ws.onerror = (error) => {
+        console.error("Voice WS error:", error);
       };
 
       // 4. Record and send audio
