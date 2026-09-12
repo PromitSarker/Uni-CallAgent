@@ -476,8 +476,8 @@ function App() {
             transition={{ duration: 0.5 }}
           >
             <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
-            <h2>আসসালামুআলাইকুম</h2>
-            <p>Welcome to Unified IT. ইউনিফাইড আইটির দুটি প্রধান বিশেষত্ব হলো AWS-এর তুলনায় কম ল্যাটেন্সিতে দ্রুত সেবা এবং ইন্টারনেটের ওপর নির্ভরতা ছাড়াই নিরাপদ প্রাইভেট নেটওয়ার্কের মাধ্যমে সংযুক্ত থাকার সুবিধা। How can I help you with your IT services today?</p>
+            <h2>Welcome to Unified IT</h2>
+            <p>How can I help you with your IT services today?</p>
             
             <div className="suggestion-cards">
               <motion.div 
