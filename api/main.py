@@ -37,6 +37,9 @@ def create_app() -> FastAPI:
 	app.include_router(upload_router, prefix="/api")
 	app.include_router(voice_router, prefix="/api")
 	app.include_router(voice_stream_router, prefix="/api")
+	from api.routers.timesheets import router as timesheets_router
+	app.include_router(timesheets_router, prefix="/api")
+
 	
 	uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 	os.makedirs(uploads_dir, exist_ok=True)

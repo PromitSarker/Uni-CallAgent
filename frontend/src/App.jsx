@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { AudioQueue } from './utils/audioQueue';
 import { CaptchaGate } from './components/CaptchaGate';
 
@@ -14,6 +15,7 @@ const generateUUID = () => {
 };
 
 function App() {
+  const navigate = useNavigate();
   const [conversationId, setConversationId] = useState('');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -434,6 +436,15 @@ function App() {
       </motion.button>
       <motion.button 
         className="new-chat-btn" 
+        onClick={() => navigate('/timesheet')}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Clock size={18} />
+        Timesheets
+      </motion.button>
+      <motion.button 
+        className="new-chat-btn" 
         onClick={handleNewChat}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -474,8 +485,8 @@ function App() {
             transition={{ duration: 0.5 }}
           >
             <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
-            <h2>Welcome to Unified IT</h2>
-            <p>How can I help you with your IT services today?</p>
+            <h2>আসসালামুআলাইকুম</h2>
+            <p>Welcome to Unified IT. ইউনিফাইড আইটির দুটি প্রধান বিশেষত্ব হলো AWS-এর তুলনায় কম ল্যাটেন্সিতে দ্রুত সেবা এবং ইন্টারনেটের ওপর নির্ভরতা ছাড়াই নিরাপদ প্রাইভেট নেটওয়ার্কের মাধ্যমে সংযুক্ত থাকার সুবিধা। How can I help you with your IT services today?</p>
             
             <div className="suggestion-cards">
               <motion.div 
