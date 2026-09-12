@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Clock } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -433,15 +433,6 @@ function App() {
           {isCallActive ? <PhoneOff size={18} /> : (isConnecting ? <Loader2 className="spin" size={18} /> : <Phone size={18} />)}
           {isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}
         </span>
-      </motion.button>
-      <motion.button 
-        className="new-chat-btn" 
-        onClick={() => navigate('/timesheet')}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Clock size={18} />
-        Timesheets
       </motion.button>
       <motion.button 
         className="new-chat-btn" 

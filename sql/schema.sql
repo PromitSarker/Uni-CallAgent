@@ -59,20 +59,4 @@ CREATE TABLE IF NOT EXISTS global_settings (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS timesheets (
-    id SERIAL PRIMARY KEY,
-    locum_email TEXT NOT NULL,
-    shift_date DATE NOT NULL,
-    scheduled_start_time TIME NOT NULL,
-    scheduled_end_time TIME NOT NULL,
-    actual_start_time TIME NOT NULL,
-    actual_end_time TIME NOT NULL,
-    scheduled_break_minutes INTEGER NOT NULL,
-    actual_break_minutes INTEGER NOT NULL,
-    notes TEXT,
-    status TEXT DEFAULT 'pending',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
 
-CREATE INDEX IF NOT EXISTS idx_timesheets_locum_email
-    ON timesheets (locum_email);
