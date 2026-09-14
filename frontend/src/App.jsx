@@ -674,7 +674,7 @@ function App() {
         <div ref={messagesEndRef} />
       </main>
 
-      <div className="input-container" style={isCallActive ? { flexDirection: 'column' } : {}}>
+      <div className="input-container" style={isCallActive ? { flexDirection: 'column', alignItems: 'center' } : {}}>
         {isCallActive && (
           <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: isInputFocused ? '4px' : '10px' }}>
             <motion.div 
