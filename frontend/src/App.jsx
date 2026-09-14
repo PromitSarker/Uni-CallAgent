@@ -43,6 +43,7 @@ function App() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isVoiceThinking, setIsVoiceThinking] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -675,24 +676,29 @@ function App() {
 
       <div className="input-container" style={isCallActive ? { flexDirection: 'column' } : {}}>
         {isCallActive && (
-          <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px' }}>
+          <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: isInputFocused ? '4px' : '10px' }}>
             <motion.div 
               className={`mic-button recording ${isVoiceThinking ? 'thinking' : ''}`}
               style={{
-                width: '80px', height: '80px', borderRadius: '50%',
+                width: isInputFocused ? '48px' : '80px', 
+                height: isInputFocused ? '48px' : '80px', 
+                borderRadius: '50%',
                 background: isVoiceThinking ? 'linear-gradient(135deg, #10b981, #3b82f6)' : 'var(--brand-gradient)',
                 color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
                 boxShadow: isVoiceThinking ? '0 0 35px rgba(16, 185, 129, 0.6)' : '0 0 25px rgba(102, 45, 145, 0.4)',
-                marginBottom: '10px'
+                marginBottom: isInputFocused ? '4px' : '10px',
+                transition: 'width 0.3s ease, height 0.3s ease, margin-bottom 0.3s ease'
               }}
               animate={isVoiceThinking ? { scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] } : { scale: [1, 1.15, 1] }}
               transition={isVoiceThinking ? { repeat: Infinity, duration: 1 } : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
             >
-              {isVoiceThinking ? <Loader2 size={32} className="spin" /> : <Mic size={32} />}
+              {isVoiceThinking ? <Loader2 size={isInputFocused ? 20 : 32} className="spin" /> : <Mic size={isInputFocused ? 20 : 32} />}
             </motion.div>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '10px' }}>
-              Live call active. Speak naturally or write a message.
-            </p>
+            {!isInputFocused && (
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '10px' }}>
+                Live call active. Speak naturally or write a message.
+              </p>
+            )}
           </div>
         )}
         
@@ -721,6 +727,8 @@ function App() {
             className="chat-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
             placeholder={isCallActive ? "Write a message during the call..." : "Write a message here..."}
             disabled={isLoading || isUploading}
           />
