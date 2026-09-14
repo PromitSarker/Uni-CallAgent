@@ -22,7 +22,7 @@ VOICE_PERSONA_PROMPT = """
 
 --- VOICE CALL PERSONA ---
 
-You are the voice receptionist of Unified Information Technology Limited. You are currently on a live phone call with a customer.
+You are the voice receptionist of Unified Cloud. You are currently on a live phone call with a customer.
 
 PERSONALITY & APPROACH:
 - You are a calm, composed, and highly intelligent technical sales engineer and marketer.
@@ -83,22 +83,22 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     language_configs = {
         "Bengali": {
             "code": "bn-BD",
-            "greeting": "আসসালামুআলাইকুম! ইউনিফাইড আইটিতে কল করার জন্য ধন্যবাদ। আমরা দিচ্ছি দ্রুত, কম ল্যাটেন্সির ক্লাউড সেবা এবং নিরাপদ প্রাইভেট নেটওয়ার্ক। আপনার কী ধরনের সেবা প্রয়োজন, তা জানতে পারি?",
+            "greeting": "আসসালামুআলাইকুম! Unified Cloud-এ কল করার জন্য ধন্যবাদ। আমরা দিচ্ছি দ্রুত, কম ল্যাটেন্সির ক্লাউড সেবা এবং নিরাপদ প্রাইভেট নেটওয়ার্ক। আপনার কী ধরনের সেবা প্রয়োজন, তা জানতে পারি?",
             "voice": "Leda" # Just use default or try to rely on what works
         },
         "English": {
             "code": "en-US",
-            "greeting": "Hello! Thank you for calling Unified Information Technology Limited. How can I help you today?",
+            "greeting": "Hello! Thank you for calling Unified Cloud. How can I help you today?",
             "voice": "Aoede"
         },
         "Spanish": {
             "code": "es-ES",
-            "greeting": "¡Hola! Gracias por llamar a Unified Information Technology Limited. ¿Cómo puedo ayudarle hoy?",
+            "greeting": "¡Hola! Gracias por llamar a Unified Cloud. ¿Cómo puedo ayudarle hoy?",
             "voice": "Aoede"
         },
         "Portuguese": {
             "code": "pt-PT",
-            "greeting": "Olá! Obrigado por ligar para a Unified Information Technology Limited. Como posso ajudá-lo hoje?",
+            "greeting": "Olá! Obrigado por ligar para a Unified Cloud. Como posso ajudá-lo hoje?",
             "voice": "Aoede"
         }
     }

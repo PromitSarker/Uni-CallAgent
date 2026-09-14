@@ -1,1 +1,1 @@
-"""Unified Information Technology Limited FastAPI package."""
+"""Unified Cloud FastAPI package."""

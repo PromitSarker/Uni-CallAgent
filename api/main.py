@@ -15,9 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
 	app = FastAPI(
-		title="Unified Information Technology Limited API",
+		title="Unified Cloud API",
 		version="1.0.0",
-		description="Minimal chat API backed by Unified Information Technology Limited LangGraph agent.",
+		description="Minimal chat API backed by Unified Cloud LangGraph agent.",
 	)
 
 	allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
