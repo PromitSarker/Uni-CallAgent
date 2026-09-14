@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
@@ -22,6 +23,15 @@ def _now_utc() -> datetime:
 	return datetime.now(timezone.utc)
 
 
+def _sanitize_input(text: str, max_length: int = 2000) -> str:
+	"""Strip control characters and truncate to prevent prompt injection via token stuffing."""
+	# Remove null bytes and non-printable control chars (keep newlines/tabs for readability)
+	sanitized = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+	if len(sanitized) > max_length:
+		sanitized = sanitized[:max_length]
+	return sanitized.strip()
+
+
 def _to_langchain_messages(messages: List[ConversationMessage]) -> List[BaseMessage]:
 	lang_messages: List[BaseMessage] = []
 	for message in messages:
@@ -33,7 +43,7 @@ def _to_langchain_messages(messages: List[ConversationMessage]) -> List[BaseMess
 
 
 def send_message(conversation_id: str, payload: ChatMessageRequest) -> ChatMessageResponse:
-	user_message = payload.message.strip()
+	user_message = _sanitize_input(payload.message)
 	if not user_message:
 		raise HTTPException(
 			status_code=400,
