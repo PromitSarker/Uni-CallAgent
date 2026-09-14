@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Mail, Headset, Settings } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Mail, Headphones, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -548,7 +548,7 @@ function App() {
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
                 <div className="card-header">
-                  <Headset className="card-icon" size={24} />
+                  <Headphones className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Call Center Solution</h3>
