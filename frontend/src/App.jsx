@@ -566,7 +566,7 @@ function App() {
             <div className="suggestion-cards">
               <motion.div 
                 className="suggestion-card blue" 
-                onClick={() => handleQuickSend("Tell me about Domain Registration & Management.")}
+                onClick={() => handleQuickSend("Tell me about Domain Service & Management.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
@@ -575,7 +575,7 @@ function App() {
                   <Globe className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">Domain Registration</h3>
+                <h3 className="card-title">Domain Service</h3>
                 <p className="card-desc">Register, renew, and secure your online identity with our domain services.</p>
               </motion.div>
 
