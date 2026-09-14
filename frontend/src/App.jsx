@@ -482,7 +482,7 @@ function App() {
         {isConnecting && <div className="ripple-container"></div>}
         <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isCallActive ? <PhoneOff size={18} /> : (isConnecting ? <Loader2 className="spin" size={18} /> : <Phone size={18} />)}
-          {isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}
+          <span className="btn-text">{isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}</span>
         </span>
       </motion.button>
       <motion.button 
@@ -492,7 +492,7 @@ function App() {
         whileTap={{ scale: 0.95 }}
       >
         <MessageSquarePlus size={18} />
-        New Chat
+        <span className="btn-text">New Chat</span>
       </motion.button>
     </div>
   );

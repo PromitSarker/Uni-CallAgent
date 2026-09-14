@@ -560,32 +560,82 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  /* Header & Navigation Polish */
   .header {
-    flex-direction: column;
-    padding: 16px 20px;
-    gap: 16px;
+    flex-direction: row;
+    padding: 12px 16px;
+    gap: 12px;
   }
   .action-buttons {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
-    width: 100%;
+    width: auto;
   }
   .action-buttons > * {
-    flex: 1;
-    justify-content: center;
-    white-space: nowrap;
+    flex: 0 0 auto;
   }
+  /* Hide text in buttons on mobile */
+  .new-chat-btn .btn-text {
+    display: none;
+  }
+  .new-chat-btn {
+    padding: 10px; /* rounder button for icon */
+  }
+
+  /* Empty State & Suggestion Cards Overhaul */
+  .empty-state {
+    margin-top: 0;
+  }
+  .empty-state h2 { font-size: 1.5rem; }
+  .empty-state > p { font-size: 0.95rem; margin-bottom: 24px; padding: 0 10px; }
+  .empty-state-logo { height: 42px; margin-bottom: 16px; }
+  
+  /* Horizontal Scrollable Carousel */
+  .suggestion-cards {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+    width: 100vw; /* take full width to edge */
+    margin-left: -12px; /* compensate for chat container padding */
+    padding: 10px 16px 24px 16px; /* give room for shadow */
+    -webkit-overflow-scrolling: touch;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  
+  .suggestion-cards::-webkit-scrollbar {
+    display: none; /* hide scrollbar for clean UI */
+  }
+
+  .suggestion-card { 
+    flex: 0 0 260px; /* fixed width for cards in carousel */
+    max-width: 260px;
+    padding: 20px;
+    scroll-snap-align: center;
+    height: auto;
+    margin-right: 12px; /* gap between cards */
+  }
+  .suggestion-card:last-child {
+    margin-right: 0;
+  }
+
+  /* Chat Area */
   .chat-container { padding: 16px 12px; }
-  .message-wrapper { max-width: 95%; gap: 10px; }
-  .message-bubble { padding: 12px 16px; font-size: 0.95rem; }
+  .message-wrapper { max-width: 90%; gap: 8px; }
+  .avatar { width: 28px; height: 28px; font-size: 0.8rem; }
+  .message-bubble { padding: 10px 14px; font-size: 0.95rem; }
   
-  .empty-state h2 { font-size: 1.75rem; }
-  .empty-state-logo { height: 42px; margin-bottom: 20px; }
-  .suggestion-cards { flex-direction: column; align-items: center; width: 100%; }
-  .suggestion-card { width: 100%; max-width: 100%; padding: 16px; }
-  
-  .input-container { padding: 0 12px 20px 12px; }
+  /* Voice Controls & Input Optimization */
+  .input-container { padding: 0 12px 12px 12px; }
   .input-form { padding: 4px 6px; }
   .chat-input { padding: 10px 12px; font-size: 1rem; }
   .send-btn { width: 36px; height: 36px; }
+  
+  .mic-button {
+    width: 60px !important;
+    height: 60px !important;
+  }
 }
