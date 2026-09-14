@@ -56,8 +56,11 @@ function App() {
   const audioQueueRef = useRef(null);
   const isAgentSpeakingRef = useRef(false);
   const speakingTimeoutRef = useRef(null);
+  const isInitialGreetingRef = useRef(true);
 
   const setAgentSpeaking = (isSpeaking) => {
+    if (!isInitialGreetingRef.current) return; // Only apply hard-mute during the initial greeting
+
     if (isSpeaking) {
       if (speakingTimeoutRef.current) {
         clearTimeout(speakingTimeoutRef.current);
@@ -67,6 +70,7 @@ function App() {
     } else {
       speakingTimeoutRef.current = setTimeout(() => {
         isAgentSpeakingRef.current = false;
+        isInitialGreetingRef.current = false; // After first greeting ends, allow barge-in forever
       }, 1000); // 1000ms hang time to clear hardware latency and acoustic tail
     }
   };
@@ -349,6 +353,7 @@ function App() {
 
       ws.onopen = () => {
         setIsCallActive(true);
+        isInitialGreetingRef.current = true; // Reset for new calls
         console.log("Voice WS connected, waiting for AI to answer...");
       };
 
