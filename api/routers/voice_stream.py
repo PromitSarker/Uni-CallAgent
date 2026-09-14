@@ -48,7 +48,8 @@ VOICE CALL RULES:
 - If the user asks you to write something down, spell something out, or provide detailed links/information in text, use the `write_to_chat` tool to send it to the chatbox, and verbally confirm that you are writing it in the chat.
 - End calls naturally based on the conversation flow. Keep farewells polite. If the caller asks to end the call, ask for their confirmation before calling the `end_call` tool to disconnect.
 
-IMPORTANT: You are on a LIVE VOICE CALL. Respond as if speaking on the phone — brief, natural, and human-like. No long paragraphs.
+- IMPORTANT: You are on a LIVE VOICE CALL. Respond as if speaking on the phone — brief, natural, and human-like. No long paragraphs.
+- IMPORTANT: Even if the user types a message in the chat during the call, you MUST STILL respond verbally (via Voice). Do NOT say things like "I received your text", just answer their text normally as part of the spoken conversation.
 """
 
 # Ensure model format
@@ -153,7 +154,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
             await gemini_ws.send(json.dumps(initial_greeting_message))
 
             # Start proxying
-            client_to_gemini_task = asyncio.create_task(proxy_client_to_gemini(websocket, gemini_ws))
+            client_to_gemini_task = asyncio.create_task(proxy_client_to_gemini(websocket, gemini_ws, conversation_id))
             gemini_to_client_task = asyncio.create_task(proxy_gemini_to_client(websocket, gemini_ws, conversation_id, session_tokens))
 
             done, pending = await asyncio.wait(
@@ -190,8 +191,8 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
             pass
 
 
-async def proxy_client_to_gemini(client_ws: WebSocket, gemini_ws):
-    """Reads audio chunks from the browser and sends realtimeInput to Gemini."""
+async def proxy_client_to_gemini(client_ws: WebSocket, gemini_ws, conversation_id: str):
+    """Reads audio and text chunks from the browser and sends to Gemini."""
     chunk_count = 0
     try:
         while True:
@@ -215,6 +216,28 @@ async def proxy_client_to_gemini(client_ws: WebSocket, gemini_ws):
                     }
                     await gemini_ws.send(json.dumps(payload))
                     chunk_count += 1
+                elif "text" in data:
+                    # Forward chat text as clientContent
+                    text_payload = {
+                        "clientContent": {
+                            "turns": [
+                                {
+                                    "role": "user",
+                                    "parts": [{"text": data["text"]}]
+                                }
+                            ],
+                            "turnComplete": True
+                        }
+                    }
+                    await gemini_ws.send(json.dumps(text_payload))
+                    
+                    # Also save to conversation store
+                    try:
+                        db_msg = ConversationMessage(role="user", content=data["text"])
+                        await run_in_threadpool(conversation_store.append, conversation_id, db_msg)
+                    except Exception as db_err:
+                        print(f"Warning: Failed to save text message to DB: {db_err}")
+
             except json.JSONDecodeError:
                 # If they just sent bare text, they might have sent base64 directly
                 payload = {
@@ -228,7 +251,7 @@ async def proxy_client_to_gemini(client_ws: WebSocket, gemini_ws):
                 await gemini_ws.send(json.dumps(payload))
                 chunk_count += 1
 
-            if chunk_count % 50 == 1:
+            if chunk_count > 0 and chunk_count % 50 == 1:
                 print(f"Audio chunks sent to Gemini: {chunk_count}")
 
     except Exception as e:

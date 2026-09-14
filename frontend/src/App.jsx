@@ -42,6 +42,7 @@ function App() {
   // Voice call states
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isVoiceThinking, setIsVoiceThinking] = useState(false);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -140,14 +141,35 @@ function App() {
 
     const userMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const messageText = input;
     setInput('');
     setIsLoading(true);
+
+    if (isCallActive) {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        // Route text through the live voice websocket
+        try {
+          wsRef.current.send(JSON.stringify({ text: messageText }));
+          setIsVoiceThinking(true);
+        } catch (error) {
+          console.error('Error sending message via WS:', error);
+          setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        console.error('Voice call active but websocket is closed.');
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Error: Voice connection lost. Message not sent.' }]);
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await fetch(`/api/chat/${conversationId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ message: messageText }),
       });
 
       if (!response.ok) throw new Error('Network response was not ok');
@@ -177,6 +199,29 @@ function App() {
       const fileMessage = `Here is my document: ${data.url}`;
       setMessages((prev) => [...prev, { role: 'user', content: fileMessage }]);
       setIsLoading(true);
+
+      if (isCallActive) {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          try {
+            wsRef.current.send(JSON.stringify({ text: fileMessage }));
+            setIsVoiceThinking(true);
+          } catch (error) {
+            console.error('Error sending file via WS:', error);
+            setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+          } finally {
+            setIsLoading(false);
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        } else {
+          console.error('Voice call active but websocket is closed.');
+          setMessages((prev) => [...prev, { role: 'assistant', content: 'Error: Voice connection lost. File uploaded but message not sent.' }]);
+          setIsLoading(false);
+          setIsUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+        return;
+      }
 
       const chatResponse = await fetch(`/api/chat/${conversationId}/message`, {
         method: 'POST',
@@ -296,6 +341,10 @@ function App() {
           setIsConnecting(false);
         }
 
+        if (data.audioB64 || data.text || data.chat_message) {
+          setIsVoiceThinking(false);
+        }
+
         if (data.interrupted) {
           audioQueue.stop(); // Stop current playback on barge-in
         }
@@ -383,6 +432,7 @@ function App() {
     stopRinging();
     setIsConnecting(false);
     setIsCallActive(false);
+    setIsVoiceThinking(false);
     
     if (wsRef.current) {
       wsRef.current.close();
@@ -623,66 +673,67 @@ function App() {
         <div ref={messagesEndRef} />
       </main>
 
-      <div className="input-container">
-        {isCallActive ? (
-          <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px' }}>
+      <div className="input-container" style={isCallActive ? { flexDirection: 'column' } : {}}>
+        {isCallActive && (
+          <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px' }}>
             <motion.div 
-              className="mic-button recording"
+              className={`mic-button recording ${isVoiceThinking ? 'thinking' : ''}`}
               style={{
                 width: '80px', height: '80px', borderRadius: '50%',
-                background: 'var(--brand-gradient)',
+                background: isVoiceThinking ? 'linear-gradient(135deg, #10b981, #3b82f6)' : 'var(--brand-gradient)',
                 color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                boxShadow: '0 0 25px rgba(102, 45, 145, 0.4)',
+                boxShadow: isVoiceThinking ? '0 0 35px rgba(16, 185, 129, 0.6)' : '0 0 25px rgba(102, 45, 145, 0.4)',
+                marginBottom: '10px'
               }}
-              animate={{ scale: [1, 1.15, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              animate={isVoiceThinking ? { scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] } : { scale: [1, 1.15, 1] }}
+              transition={isVoiceThinking ? { repeat: Infinity, duration: 1 } : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
             >
-              <Mic size={32} />
+              {isVoiceThinking ? <Loader2 size={32} className="spin" /> : <Mic size={32} />}
             </motion.div>
-            <p style={{ marginTop: '16px', color: '#94a3b8', fontSize: '0.9rem' }}>
-              Live call active. Speak naturally.
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '10px' }}>
+              Live call active. Speak naturally or write a message.
             </p>
           </div>
-        ) : (
-          <form className="input-form" onSubmit={handleSend}>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-              accept="image/*,.pdf,.doc,.docx"
-            />
-            <motion.button
-              type="button"
-              className="attachment-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || isUploading}
-              title="Upload Document"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isUploading ? <Loader2 size={20} className="spin" /> : <Paperclip size={20} />}
-            </motion.button>
-            
-            <input
-              type="text"
-              className="chat-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Write a message here..."
-              disabled={isLoading || isUploading}
-            />
-            <motion.button 
-              type="submit" 
-              className={`send-btn ${isFlying ? 'flying' : ''}`} 
-              disabled={!input.trim() || isLoading || isUploading}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Send size={18} />
-            </motion.button>
-          </form>
         )}
+        
+        <form className="input-form" onSubmit={handleSend} style={{ width: '100%' }}>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileUpload}
+            accept="image/*,.pdf,.doc,.docx"
+          />
+          <motion.button
+            type="button"
+            className="attachment-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isUploading}
+            title="Upload Document"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {isUploading ? <Loader2 size={20} className="spin" /> : <Paperclip size={20} />}
+          </motion.button>
+          
+          <input
+            type="text"
+            className="chat-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={isCallActive ? "Write a message during the call..." : "Write a message here..."}
+            disabled={isLoading || isUploading}
+          />
+          <motion.button 
+            type="submit" 
+            className={`send-btn ${isFlying ? 'flying' : ''}`} 
+            disabled={!input.trim() || isLoading || isUploading}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Send size={18} />
+          </motion.button>
+        </form>
       </div>
     </div>
   );
