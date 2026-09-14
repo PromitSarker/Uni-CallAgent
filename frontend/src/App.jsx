@@ -55,6 +55,21 @@ function App() {
   const processorRef = useRef(null);
   const audioQueueRef = useRef(null);
   const isAgentSpeakingRef = useRef(false);
+  const speakingTimeoutRef = useRef(null);
+
+  const setAgentSpeaking = (isSpeaking) => {
+    if (isSpeaking) {
+      if (speakingTimeoutRef.current) {
+        clearTimeout(speakingTimeoutRef.current);
+        speakingTimeoutRef.current = null;
+      }
+      isAgentSpeakingRef.current = true;
+    } else {
+      speakingTimeoutRef.current = setTimeout(() => {
+        isAgentSpeakingRef.current = false;
+      }, 1000); // 1000ms hang time to clear hardware latency and acoustic tail
+    }
+  };
   
   // Ringing effect refs
   const ringIntervalRef = useRef(null);
@@ -320,8 +335,8 @@ function App() {
 
       // 2. Initialize Audio Queue (for playback) using the unified context
       const audioQueue = new AudioQueue(audioContext, {
-        onPlaybackStart: () => { isAgentSpeakingRef.current = true; },
-        onPlaybackEnd:   () => { isAgentSpeakingRef.current = false; },
+        onPlaybackStart: () => { setAgentSpeaking(true); },
+        onPlaybackEnd:   () => { setAgentSpeaking(false); },
       });
       await audioQueue.init();
       audioQueueRef.current = audioQueue;
@@ -357,7 +372,7 @@ function App() {
           audioQueue.flush(); // Instantly play whatever is in the buffer if the turn finishes early
         }
         if (data.audioB64) {
-          isAgentSpeakingRef.current = true; // Pre-emptively mute while buffering
+          setAgentSpeaking(true); // Pre-emptively mute while buffering
           audioQueue.addAudioFromBase64(data.audioB64);
         }
         if (data.chat_message) {
@@ -441,6 +456,12 @@ function App() {
     setIsConnecting(false);
     setIsCallActive(false);
     setIsVoiceThinking(false);
+    
+    if (speakingTimeoutRef.current) {
+      clearTimeout(speakingTimeoutRef.current);
+      speakingTimeoutRef.current = null;
+    }
+    isAgentSpeakingRef.current = false;
     
     if (wsRef.current) {
       wsRef.current.close();
