@@ -1,12 +1,14 @@
 // audioQueue.js
 
 export class AudioQueue {
-    constructor(context) {
+    constructor(context, { onPlaybackStart, onPlaybackEnd } = {}) {
         this.audioContext = context;
         this.queue = [];
         this.isPlaying = false;
         this.scheduledSources = [];
         this.nextStartTime = 0;
+        this.onPlaybackStart = onPlaybackStart || (() => {});
+        this.onPlaybackEnd   = onPlaybackEnd   || (() => {});
     }
 
     async init() {
@@ -76,6 +78,7 @@ export class AudioQueue {
 
     startPlayback() {
         this.isPlaying = true;
+        this.onPlaybackStart();
         this.nextStartTime = this.audioContext.currentTime + 0.1; // 100ms safety margin for hardware wakeup
         this.scheduleQueuedBuffers();
     }
@@ -104,6 +107,7 @@ export class AudioQueue {
                 }
                 if (this.scheduledSources.length === 0 && this.queue.length === 0) {
                     this.isPlaying = false;
+                    this.onPlaybackEnd();
                 }
             };
         }
@@ -119,5 +123,6 @@ export class AudioQueue {
         this.queue = [];
         this.isPlaying = false;
         this.nextStartTime = 0;
+        this.onPlaybackEnd();
     }
 }

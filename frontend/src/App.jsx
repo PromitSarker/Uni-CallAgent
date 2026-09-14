@@ -54,6 +54,7 @@ function App() {
   const mediaStreamRef = useRef(null);
   const processorRef = useRef(null);
   const audioQueueRef = useRef(null);
+  const isAgentSpeakingRef = useRef(false);
   
   // Ringing effect refs
   const ringIntervalRef = useRef(null);
@@ -318,7 +319,10 @@ function App() {
       startRinging(audioContext);
 
       // 2. Initialize Audio Queue (for playback) using the unified context
-      const audioQueue = new AudioQueue(audioContext);
+      const audioQueue = new AudioQueue(audioContext, {
+        onPlaybackStart: () => { isAgentSpeakingRef.current = true; },
+        onPlaybackEnd:   () => { isAgentSpeakingRef.current = false; },
+      });
       await audioQueue.init();
       audioQueueRef.current = audioQueue;
 
@@ -353,6 +357,7 @@ function App() {
           audioQueue.flush(); // Instantly play whatever is in the buffer if the turn finishes early
         }
         if (data.audioB64) {
+          isAgentSpeakingRef.current = true; // Pre-emptively mute while buffering
           audioQueue.addAudioFromBase64(data.audioB64);
         }
         if (data.chat_message) {
@@ -399,6 +404,8 @@ function App() {
         // Mute microphone upload during ringing. 
         // This prevents Gemini from hearing the ringing sound, which causes it to hallucinate or prematurely abort its greeting.
         if (!hasAIPickedUpRef.current) return;
+        
+        if (isAgentSpeakingRef.current) return; // Don't send mic audio while agent is speaking
         
         const inputData = e.inputBuffer.getChannelData(0);
         // Convert Float32 to Int16 PCM
