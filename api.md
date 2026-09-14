@@ -1,8 +1,8 @@
-# Unified IT API Contract
+# Unified Information Technology Limited API Contract
 
 ## Purpose
 
-This document defines the HTTP contract for chat-based customer interactions on top of the LangGraph workflow in the Unified IT agent.
+This document defines the HTTP contract for chat-based customer interactions on top of the LangGraph workflow in the Unified Information Technology Limited agent.
 
 ## Architecture Context
 

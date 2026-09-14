@@ -23,7 +23,7 @@ def search_knowledge_base(query: str) -> str:
 	"""
 	Search the knowledge base for general information, policies, or FAQs.
 	
-	Why it's needed: Use this when the user asks a general question about Unified IT, its services, policies, or pricing.
+	Why it's needed: Use this when the user asks a general question about Unified Information Technology Limited, its services, policies, or pricing.
 	"""
 	from agent.rag import search_documents
 	return search_documents(query)
@@ -102,10 +102,10 @@ def send_verification_email(email: str, session_id: str = "") -> str:
 			from agent.config import RESEND_FROM_EMAIL
 			resend.api_key = RESEND_API_KEY
 			params = {
-				"from": f"Unified IT <{RESEND_FROM_EMAIL}>",
+				"from": f"Unified Information Technology Limited <{RESEND_FROM_EMAIL}>",
 				"to": [email],
-				"subject": "Unified IT Verification Code",
-				"text": f"Hello,\n\nYour temporary password is: {code}\n\nIMPORTANT: This is a temporary password, and you need to change it immediately after you log in.\n\nThank you,\nUnified IT"
+				"subject": "Unified Information Technology Limited Verification Code",
+				"text": f"Hello,\n\nYour temporary password is: {code}\n\nIMPORTANT: This is a temporary password, and you need to change it immediately after you log in.\n\nThank you,\nUnified Information Technology Limited"
 			}
 			resend.Emails.send(params)
 			return "Verification code successfully sent to email."

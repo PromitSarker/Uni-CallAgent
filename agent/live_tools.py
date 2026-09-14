@@ -35,7 +35,7 @@ LIVE_TOOL_DECLARATIONS = [
 	},
 	{
 		"name": "search_knowledge_base",
-		"description": "Search the knowledge base for general information, policies, or FAQs. Use this when the user asks a general question about Unified IT, its services, policies, or pricing.",
+		"description": "Search the knowledge base for general information, policies, or FAQs. Use this when the user asks a general question about Unified Information Technology Limited, its services, policies, or pricing.",
 		"parameters": {
 			"type": "OBJECT",
 			"properties": {

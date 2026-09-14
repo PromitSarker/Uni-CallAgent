@@ -1,6 +1,6 @@
-# Unified IT Agent Architecture
+# Unified Information Technology Limited Agent Architecture
 
-This system is a message-only chat assistant for Unified IT, a premium IT services and cloud solutions provider. FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
+This system is a message-only chat assistant for Unified Information Technology Limited, a premium IT services and cloud solutions provider. FastAPI receives the message, LangGraph routes the request, Groq Cloud LLM determines whether to search the knowledge base for FAQs, save collected information (lead generation), or escalate. PostgreSQL stores conversations, collected data, session summaries, and user auth codes.
 
 ## 1.1 System Overview
 

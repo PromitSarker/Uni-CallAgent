@@ -25,24 +25,24 @@ language_configs = {
     },
     "English": {
         "code": "en-US",
-        "greeting": "Hello! Thank you for calling Unified IT. How can I help you today?",
+        "greeting": "Hello! Thank you for calling Unified Information Technology Limited. How can I help you today?",
         "voice": "Aoede"
     },
     "Spanish": {
         "code": "es-ES",
-        "greeting": "¡Hola! Gracias por llamar a Unified IT. ¿Cómo puedo ayudarle hoy?",
+        "greeting": "¡Hola! Gracias por llamar a Unified Information Technology Limited. ¿Cómo puedo ayudarle hoy?",
         "voice": "Aoede"
     },
     "Portuguese": {
         "code": "pt-PT",
-        "greeting": "Olá! Obrigado por ligar para a Unified IT. Como posso ajudá-lo hoje?",
+        "greeting": "Olá! Obrigado por ligar para a Unified Information Technology Limited. Como posso ajudá-lo hoje?",
         "voice": "Aoede"
     }
 }
 
 VOICE_PERSONA_PROMPT = """
 --- VOICE CALL PERSONA ---
-You are the voice receptionist of Unified IT.
+You are the voice receptionist of Unified Information Technology Limited.
 - STRICT RULE: When greeting, you MUST start exactly with "{greeting}" (Do not change this greeting).
 """
 
