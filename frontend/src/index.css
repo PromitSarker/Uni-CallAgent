@@ -259,14 +259,18 @@ body {
 }
 
 .suggestion-cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
-  max-width: 640px;
+  max-width: 960px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .suggestion-card {
+  flex: 1 1 280px;
+  max-width: 400px;
   background: #ffffff;
   border-radius: 20px;
   padding: 24px;
@@ -300,6 +304,9 @@ body {
 .suggestion-card.orange::before { background: #f97316; }
 .suggestion-card.purple::before { background: #a855f7; }
 .suggestion-card.teal::before { background: #14b8a6; }
+.suggestion-card.rose::before { background: #e11d48; }
+.suggestion-card.indigo::before { background: #4f46e5; }
+.suggestion-card.green::before { background: #16a34a; }
 
 .suggestion-card:hover {
   transform: translateY(-4px);
@@ -328,6 +335,9 @@ body {
 .suggestion-card.orange .card-icon { color: #f97316; }
 .suggestion-card.purple .card-icon { color: #a855f7; }
 .suggestion-card.teal .card-icon { color: #14b8a6; }
+.suggestion-card.rose .card-icon { color: #e11d48; }
+.suggestion-card.indigo .card-icon { color: #4f46e5; }
+.suggestion-card.green .card-icon { color: #16a34a; }
 
 .sparkle-icon {
   color: #9ca3af;
@@ -340,6 +350,9 @@ body {
 .suggestion-card.orange:hover .sparkle-icon { color: #f97316; }
 .suggestion-card.purple:hover .sparkle-icon { color: #a855f7; }
 .suggestion-card.teal:hover .sparkle-icon { color: #14b8a6; }
+.suggestion-card.rose:hover .sparkle-icon { color: #e11d48; }
+.suggestion-card.indigo:hover .sparkle-icon { color: #4f46e5; }
+.suggestion-card.green:hover .sparkle-icon { color: #16a34a; }
 
 .card-title {
   font-weight: 600;

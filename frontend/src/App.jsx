@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Mail, Headset, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -462,7 +462,7 @@ function App() {
 
       <header className="header">
         <div className="header-brand">
-          <img src="/logo.png" alt="Unified IT Logo" className="brand-logo" />
+          <img src="/logo.png" alt="Unified Cloud Logo" className="brand-logo" />
         </div>
         {actionButtons}
       </header>
@@ -475,69 +475,114 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <img src="/logo.png" alt="Unified IT Logo" className="empty-state-logo" />
-            <h2>Welcome to Unified IT</h2>
-            <p>How can I help you with your IT services today?</p>
+            <img src="/logo.png" alt="Unified Cloud Logo" className="empty-state-logo" />
+            <h2>Welcome to Unified Cloud</h2>
+            <p>Discover seamless cloud hosting, powerful servers, and smart AI tools tailored for your success.</p>
             
             <div className="suggestion-cards">
               <motion.div 
                 className="suggestion-card blue" 
-                onClick={() => handleQuickSend("Tell me more about Web Hosting options.")}
+                onClick={() => handleQuickSend("Tell me about Domain Registration & Management.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
               >
                 <div className="card-header">
-                  <Server className="card-icon" size={24} />
+                  <Globe className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">Web Hosting</h3>
-                <p className="card-desc">Reliable and fast web hosting solutions for your business.</p>
+                <h3 className="card-title">Domain Registration</h3>
+                <p className="card-desc">Register, renew, and secure your online identity with our domain services.</p>
               </motion.div>
 
               <motion.div 
                 className="suggestion-card orange" 
-                onClick={() => handleQuickSend("What cloud server solutions do you provide?")}
+                onClick={() => handleQuickSend("What cloud hosting and infrastructure solutions do you provide?")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+              >
+                <div className="card-header">
+                  <Server className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
+                <h3 className="card-title">Cloud Hosting</h3>
+                <p className="card-desc">Reliable, scalable, and secure cloud infrastructure with 99.9% uptime.</p>
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card purple" 
+                onClick={() => handleQuickSend("How can Business Email Solutions enhance our communication?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
                 <div className="card-header">
-                  <Database className="card-icon" size={24} />
+                  <Mail className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">Cloud Servers</h3>
-                <p className="card-desc">Scalable VPS and dedicated cloud servers for high performance.</p>
+                <h3 className="card-title">Business Email</h3>
+                <p className="card-desc">Professional, secure email services tailored for startups to enterprises.</p>
               </motion.div>
 
               <motion.div 
-                className="suggestion-card purple" 
-                onClick={() => handleQuickSend("How can you help with custom AI development?")}
+                className="suggestion-card teal" 
+                onClick={() => handleQuickSend("Tell me more about Bulk SMS and OTP services.")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.25 }}
+              >
+                <div className="card-header">
+                  <MessageSquare className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
+                <h3 className="card-title">Bulk SMS & OTP</h3>
+                <p className="card-desc">Fast and reliable messaging for promotions and secure OTP verification.</p>
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card rose" 
+                onClick={() => handleQuickSend("What Call Center Solutions do you offer?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
                 <div className="card-header">
-                  <Cpu className="card-icon" size={24} />
+                  <Headset className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">AI Development</h3>
-                <p className="card-desc">Custom AI, SaaS, and PaaS solutions tailored to your needs.</p>
+                <h3 className="card-title">Call Center Solution</h3>
+                <p className="card-desc">BTRC-licensed platform for seamless sales, CRM, and customer support.</p>
               </motion.div>
 
               <motion.div 
-                className="suggestion-card teal" 
-                onClick={() => handleQuickSend("Tell me about your API integrations.")}
+                className="suggestion-card indigo" 
+                onClick={() => handleQuickSend("How can Agentic AI and Automation help my business?")}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.35 }}
+              >
+                <div className="card-header">
+                  <Bot className="card-icon" size={24} />
+                  <Sparkles className="sparkle-icon" size={18} />
+                </div>
+                <h3 className="card-title">Agentic AI</h3>
+                <p className="card-desc">Smart AI agents that automate customer support, workflows, and operations.</p>
+              </motion.div>
+
+              <motion.div 
+                className="suggestion-card green" 
+                onClick={() => handleQuickSend("Tell me about your Business Automation Solutions.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <div className="card-header">
-                  <Code className="card-icon" size={24} />
+                  <Settings className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">API Integrations</h3>
-                <p className="card-desc">Seamless API solutions to connect your enterprise tools.</p>
+                <h3 className="card-title">Business Automation</h3>
+                <p className="card-desc">Intelligent systems to simplify operations and manage workflows smoothly.</p>
               </motion.div>
             </div>
           </motion.div>
