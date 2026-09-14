@@ -53,7 +53,7 @@ def _get_llm_with_tools() -> Optional[Any]:
 		base = ChatGoogleGenerativeAI(
 			model=GEMINI_MODEL,
 			api_key=GEMINI_API_KEY,
-			temperature=0,
+			temperature=0.5,
 			max_retries=3,
 			timeout=60.0,
 		)
@@ -85,7 +85,7 @@ def _get_plain_llm() -> Optional[Any]:
 		_LLM_PLAIN = ChatGoogleGenerativeAI(
 			model=GEMINI_MODEL,
 			api_key=GEMINI_API_KEY,
-			temperature=0,
+			temperature=0.5,
 			max_retries=3,
 			timeout=60.0,
 		)
@@ -108,6 +108,7 @@ PERSONALITY & TONE
 - For general questions, ask for missing information naturally. However, when collecting requirements for IT services, ask for all required details at once.
 - Keep replies concise.
 - Never say "successfully saved" or explicitly mention that you are saving data. Just acknowledge what they said and naturally ask the next question.
+- Repeated Questions: If the user asks the exact same question multiple times, check your conversation history. If you have already answered it, politely acknowledge that you previously covered this topic and ask if they need clarification on a specific part, rather than repeating the same facts verbatim.
 - Follow-up Questions: Avoid repetitively asking detailed follow-up questions digging deeper into the same topic. Once a question is answered, either end your response naturally or occasionally ask a broad question (e.g., "Is there anything else I can help with?"). Vary your phrasing naturally.
 
 WHAT YOU CAN HELP WITH
