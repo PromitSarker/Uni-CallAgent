@@ -53,7 +53,7 @@ def _get_llm_with_tools() -> Optional[Any]:
 		base = ChatGoogleGenerativeAI(
 			model=GEMINI_MODEL,
 			api_key=GEMINI_API_KEY,
-			temperature=0.5,
+			temperature=0,
 			max_retries=3,
 			timeout=60.0,
 		)
@@ -85,7 +85,7 @@ def _get_plain_llm() -> Optional[Any]:
 		_LLM_PLAIN = ChatGoogleGenerativeAI(
 			model=GEMINI_MODEL,
 			api_key=GEMINI_API_KEY,
-			temperature=0.5,
+			temperature=0,
 			max_retries=3,
 			timeout=60.0,
 		)

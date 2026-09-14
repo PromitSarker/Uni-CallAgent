@@ -57,7 +57,7 @@ async def generate_greeting(lang_name, config):
                 "setup": {
                     "model": formatted_model,
                     "generationConfig": {
-                        "temperature": 0.2,
+                        "temperature": 0,
                         "responseModalities": ["AUDIO"],
                         "speechConfig": {
                             "voiceConfig": {
