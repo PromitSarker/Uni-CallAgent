@@ -83,7 +83,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     language_configs = {
         "Bengali": {
             "code": "bn-BD",
-            "greeting": "আসসালামুআলাইকুম! ইউনিফাইড ক্লাউডে কল করার জন্য ধন্যবাদ। কিভাবে আপনাকে সাহায্য করতে পারি?",
+            "greeting": "আসসালামুআলাইকুম! Unified Cloud -এ কল করার জন্য ধন্যবাদ। কিভাবে আপনাকে সাহায্য করতে পারি?",
             "voice": "Leda" # Just use default or try to rely on what works
         },
         "English": {
@@ -115,7 +115,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
                 "setup": {
                     "model": formatted_model,
                     "generationConfig": {
-                        "temperature": 0,
+                        "temperature": 0.2,
                         "responseModalities": ["AUDIO"],
                         "speechConfig": {
                             "voiceConfig": {
