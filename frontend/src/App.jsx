@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Sparkles, Server, Database, Cpu, Code, Mail, Headphones, Settings } from 'lucide-react';
+import { Send, MessageSquarePlus, MessageSquare, Paperclip, Loader2, Phone, PhoneOff, Mic, MicOff, Globe, Bot, Server, Database, Cpu, Code, Mail, Headphones, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -573,7 +573,6 @@ function App() {
               >
                 <div className="card-header">
                   <Globe className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Domain Service</h3>
                 <p className="card-desc">Register, renew, and secure your online identity with our domain services.</p>
@@ -588,7 +587,6 @@ function App() {
               >
                 <div className="card-header">
                   <Server className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Cloud Service</h3>
                 <p className="card-desc">Reliable, scalable, and secure cloud infrastructure with 99.9% uptime.</p>
@@ -603,7 +601,6 @@ function App() {
               >
                 <div className="card-header">
                   <Mail className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Business Email</h3>
                 <p className="card-desc">Professional, secure email services tailored for startups to enterprises.</p>
@@ -618,7 +615,6 @@ function App() {
               >
                 <div className="card-header">
                   <MessageSquare className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Bulk SMS & OTP</h3>
                 <p className="card-desc">Fast and reliable messaging for promotions and secure OTP verification.</p>
@@ -633,7 +629,6 @@ function App() {
               >
                 <div className="card-header">
                   <Headphones className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Call Center Solution</h3>
                 <p className="card-desc">BTRC-licensed platform for seamless sales, CRM, and customer support.</p>
@@ -648,7 +643,6 @@ function App() {
               >
                 <div className="card-header">
                   <Bot className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Agentic AI</h3>
                 <p className="card-desc">Smart AI agents that automate customer support, workflows, and operations.</p>
@@ -663,7 +657,6 @@ function App() {
               >
                 <div className="card-header">
                   <Settings className="card-icon" size={24} />
-                  <Sparkles className="sparkle-icon" size={18} />
                 </div>
                 <h3 className="card-title">Business Automation</h3>
                 <p className="card-desc">Intelligent systems to simplify operations and manage workflows smoothly.</p>
