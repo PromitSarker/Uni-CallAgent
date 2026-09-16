@@ -20,7 +20,7 @@ GEMINI_WS_URL = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativ
 language_configs = {
     "Bengali": {
         "code": "bn-BD",
-        "greeting": "আসসালামুআলাইকুম! Unified Cloud -এ কল করার জন্য ধন্যবাদ। কিভাবে আপনাকে সাহায্য করতে পারি?",
+        "greeting": "ইউনিফাইড ক্লাউডে আপনাকে স্বাগতম। আমি কি আমাদের সম্পর্কে আপনাকে জানাতে পারি?",
         "voice": "Leda"
     },
     "English": {
