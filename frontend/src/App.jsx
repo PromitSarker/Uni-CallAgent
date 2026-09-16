@@ -8,7 +8,7 @@ import { CaptchaGate } from './components/CaptchaGate';
 
 
 const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
@@ -23,19 +23,19 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [agentLanguage, setAgentLanguage] = useState('Bengali');
   const [isFlying, setIsFlying] = useState(false);
-  
+
   // CAPTCHA state
   const [isVerified, setIsVerified] = useState(() => {
     const solvedAt = localStorage.getItem('captchaSolvedAt');
     if (!solvedAt) return false;
-    
+
     const ONE_DAY = 24 * 60 * 60 * 1000;
     const isStillValid = (Date.now() - parseInt(solvedAt, 10)) < ONE_DAY;
-    
+
     if (!isStillValid) {
       localStorage.removeItem('captchaSolvedAt');
     }
-    
+
     return isStillValid;
   });
 
@@ -44,10 +44,10 @@ function App() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isVoiceThinking, setIsVoiceThinking] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  
+
   // Live voice refs
   const wsRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -74,14 +74,14 @@ function App() {
       }, 1000); // 1000ms hang time to clear hardware latency and acoustic tail
     }
   };
-  
+
   // Ringing effect refs
   const ringIntervalRef = useRef(null);
   const hasAIPickedUpRef = useRef(false);
 
   useEffect(() => {
     setConversationId(generateUUID());
-    
+
     // Fetch initial language setting
     fetch('/api/admin/settings')
       .then(res => res.json())
@@ -216,7 +216,7 @@ function App() {
       const response = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Upload failed');
       const data = await response.json();
-      
+
       const fileMessage = `Here is my document: ${data.url}`;
       setMessages((prev) => [...prev, { role: 'user', content: fileMessage }]);
       setIsLoading(true);
@@ -280,21 +280,21 @@ function App() {
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        
+
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(440, ctx.currentTime); 
+        osc1.frequency.setValueAtTime(440, ctx.currentTime);
         osc2.type = 'sine';
         osc2.frequency.setValueAtTime(480, ctx.currentTime);
-        
+
         gainNode.gain.setValueAtTime(0, ctx.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
         gainNode.gain.setValueAtTime(0.1, ctx.currentTime + 1.0);
         gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.1);
-        
+
         osc1.connect(gainNode);
         osc2.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
+
         osc1.start(ctx.currentTime);
         osc2.start(ctx.currentTime);
         osc1.stop(ctx.currentTime + 1.2);
@@ -328,7 +328,7 @@ function App() {
         }
       });
       mediaStreamRef.current = stream;
-      
+
       // Create a SINGLE unified AudioContext for the entire session (16kHz)
       // This prevents Windows/Chrome from constantly switching hardware sample rates,
       // which causes severe pitch shifting ("chipmunk" or "Darth Vader" effects).
@@ -340,7 +340,7 @@ function App() {
       // 2. Initialize Audio Queue (for playback) using the unified context
       const audioQueue = new AudioQueue(audioContext, {
         onPlaybackStart: () => { setAgentSpeaking(true); },
-        onPlaybackEnd:   () => { setAgentSpeaking(false); },
+        onPlaybackEnd: () => { setAgentSpeaking(false); },
       });
       await audioQueue.init();
       audioQueueRef.current = audioQueue;
@@ -359,7 +359,7 @@ function App() {
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        
+
         if (!hasAIPickedUpRef.current && (data.audioB64 || data.text || data.chat_message)) {
           hasAIPickedUpRef.current = true;
           stopRinging();
@@ -413,20 +413,20 @@ function App() {
 
       // 4. Record and send audio
       const source = audioContext.createMediaStreamSource(stream);
-      
+
       // ScriptProcessor is deprecated but works everywhere. AudioWorklet is better for production.
       const processor = audioContext.createScriptProcessor(1024, 1, 1);
       processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-        
+
         // Mute microphone upload during ringing. 
         // This prevents Gemini from hearing the ringing sound, which causes it to hallucinate or prematurely abort its greeting.
         if (!hasAIPickedUpRef.current) return;
-        
+
         if (isAgentSpeakingRef.current) return; // Don't send mic audio while agent is speaking
-        
+
         const inputData = e.inputBuffer.getChannelData(0);
         // Convert Float32 to Int16 PCM
         const pcm16 = new Int16Array(inputData.length);
@@ -461,13 +461,13 @@ function App() {
     setIsConnecting(false);
     setIsCallActive(false);
     setIsVoiceThinking(false);
-    
+
     if (speakingTimeoutRef.current) {
       clearTimeout(speakingTimeoutRef.current);
       speakingTimeoutRef.current = null;
     }
     isAgentSpeakingRef.current = false;
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -494,8 +494,8 @@ function App() {
     <div className="action-buttons">
       <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface-light)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border)', fontSize: '0.9rem' }}>
         <Globe size={16} color="var(--primary-light)" />
-        <select 
-          value={agentLanguage} 
+        <select
+          value={agentLanguage}
           onChange={handleLanguageChange}
           style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', cursor: 'pointer' }}
         >
@@ -505,9 +505,9 @@ function App() {
           <option value="Portuguese">Portuguese</option>
         </select>
       </div>
-      <motion.button 
-        className={`new-chat-btn ${isCallActive ? 'active-voice-btn' : ''}`} 
-        onClick={toggleCall} 
+      <motion.button
+        className={`new-chat-btn ${isCallActive ? 'active-voice-btn' : ''}`}
+        onClick={toggleCall}
         style={{ backgroundColor: isCallActive ? '#ef4444' : (isConnecting ? '#f59e0b' : ''), position: 'relative', overflow: 'hidden' }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -518,8 +518,8 @@ function App() {
           <span className="btn-text">{isCallActive ? 'End Live Call' : (isConnecting ? 'Connecting...' : 'Call AI')}</span>
         </span>
       </motion.button>
-      <motion.button 
-        className="new-chat-btn" 
+      <motion.button
+        className="new-chat-btn"
         onClick={handleNewChat}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -553,7 +553,7 @@ function App() {
 
       <main className="chat-container">
         {messages.length === 0 ? (
-          <motion.div 
+          <motion.div
             className="empty-state"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -562,10 +562,10 @@ function App() {
             <img src="/logo.png" alt="Unified Cloud Logo" className="empty-state-logo" />
             <h2>Welcome to Unified Cloud</h2>
             <p>Discover seamless cloud hosting, powerful servers, and smart AI tools tailored for your success.</p>
-            
+
             <div className="suggestion-cards">
-              <motion.div 
-                className="suggestion-card blue" 
+              <motion.div
+                className="suggestion-card blue"
                 onClick={() => handleQuickSend("Tell me about Domain Service & Management.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -579,8 +579,8 @@ function App() {
                 <p className="card-desc">Register, renew, and secure your online identity with our domain services.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card orange" 
+              <motion.div
+                className="suggestion-card orange"
                 onClick={() => handleQuickSend("What cloud hosting and infrastructure solutions do you provide?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -590,12 +590,12 @@ function App() {
                   <Server className="card-icon" size={24} />
                   <Sparkles className="sparkle-icon" size={18} />
                 </div>
-                <h3 className="card-title">Cloud Hosting</h3>
+                <h3 className="card-title">Cloud Service</h3>
                 <p className="card-desc">Reliable, scalable, and secure cloud infrastructure with 99.9% uptime.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card purple" 
+              <motion.div
+                className="suggestion-card purple"
                 onClick={() => handleQuickSend("How can Business Email Solutions enhance our communication?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -609,8 +609,8 @@ function App() {
                 <p className="card-desc">Professional, secure email services tailored for startups to enterprises.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card teal" 
+              <motion.div
+                className="suggestion-card teal"
                 onClick={() => handleQuickSend("Tell me more about Bulk SMS and OTP services.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -624,8 +624,8 @@ function App() {
                 <p className="card-desc">Fast and reliable messaging for promotions and secure OTP verification.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card rose" 
+              <motion.div
+                className="suggestion-card rose"
                 onClick={() => handleQuickSend("What Call Center Solutions do you offer?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -639,8 +639,8 @@ function App() {
                 <p className="card-desc">BTRC-licensed platform for seamless sales, CRM, and customer support.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card indigo" 
+              <motion.div
+                className="suggestion-card indigo"
                 onClick={() => handleQuickSend("How can Agentic AI and Automation help my business?")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -654,8 +654,8 @@ function App() {
                 <p className="card-desc">Smart AI agents that automate customer support, workflows, and operations.</p>
               </motion.div>
 
-              <motion.div 
-                className="suggestion-card green" 
+              <motion.div
+                className="suggestion-card green"
                 onClick={() => handleQuickSend("Tell me about your Business Automation Solutions.")}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -672,8 +672,8 @@ function App() {
           </motion.div>
         ) : (
           messages.map((msg, index) => (
-            <motion.div 
-              key={index} 
+            <motion.div
+              key={index}
               className={`message-wrapper ${msg.role}`}
               initial={{ opacity: 0, y: 15, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -688,9 +688,9 @@ function App() {
             </motion.div>
           ))
         )}
-        
+
         {isLoading && (
-          <motion.div 
+          <motion.div
             className="message-wrapper assistant"
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -710,11 +710,11 @@ function App() {
       <div className="input-container" style={isCallActive ? { flexDirection: 'column', alignItems: 'center' } : {}}>
         {isCallActive && (
           <div className="voice-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: isInputFocused ? '4px' : '10px' }}>
-            <motion.div 
+            <motion.div
               className={`mic-button recording ${isVoiceThinking ? 'thinking' : ''}`}
               style={{
-                width: isInputFocused ? '48px' : '80px', 
-                height: isInputFocused ? '48px' : '80px', 
+                width: isInputFocused ? '48px' : '80px',
+                height: isInputFocused ? '48px' : '80px',
                 borderRadius: '50%',
                 background: isVoiceThinking ? 'linear-gradient(135deg, #10b981, #3b82f6)' : 'var(--brand-gradient)',
                 color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
@@ -734,7 +734,7 @@ function App() {
             )}
           </div>
         )}
-        
+
         <form className="input-form" onSubmit={handleSend} style={{ width: '100%' }}>
           <input
             type="file"
@@ -754,7 +754,7 @@ function App() {
           >
             {isUploading ? <Loader2 size={20} className="spin" /> : <Paperclip size={20} />}
           </motion.button>
-          
+
           <input
             type="text"
             className="chat-input"
@@ -765,9 +765,9 @@ function App() {
             placeholder={isCallActive ? "Write a message during the call..." : "Write a message here..."}
             disabled={isLoading || isUploading}
           />
-          <motion.button 
-            type="submit" 
-            className={`send-btn ${isFlying ? 'flying' : ''}`} 
+          <motion.button
+            type="submit"
+            className={`send-btn ${isFlying ? 'flying' : ''}`}
             disabled={!input.trim() || isLoading || isUploading}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
