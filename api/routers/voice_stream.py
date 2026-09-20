@@ -84,7 +84,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     language_configs = {
         "Bengali": {
             "code": "bn-BD",
-            "greeting": "ইউনিফাইড ক্লাউডে আপনাকে স্বাগতম। আমি কি আমাদের সম্পর্কে আপনাকে জানাতে পারি?",
+            "greeting": "ইউনিফাইড ক্লাউডে আপনাকে স্বাগতম। আমি কি আমাদের services সম্পর্কে ছোট একটা ধারণা দিতে পারি?",
             "voice": "Leda" # Just use default or try to rely on what works
         },
         "English": {
