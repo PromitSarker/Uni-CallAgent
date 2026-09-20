@@ -12,11 +12,11 @@ Network security is monitored and defended by our in-house Security Operations C
 
 Private Network Connectivity — Independent of the Public Internet
 Our private network is engineered to function even when the public internet isn't available.
-Through direct connections to telecom carriers, BDIX, and NIX, services hosted within our unified network remain reachable to ISPs and end users independent of standard internet access.
+Through direct connections to ALL telecom carriers, 50+ ISP services, BDIX, and NIX, services hosted within our unified network remain reachable to end users independent of standard internet access.
 
 This isn't theoretical — it's proven.
 During the 2024 nationwide internet shutdown, our infrastructure kept internet services running for our clients without interruption.
-We maintain partnerships with 50+ ISPs, reinforcing this level of network resilience and reach.
+We are connected with 50+ ISP services and ALL telecom operators, reinforcing this level of network resilience and reach. Note: It is 50+ ISP services, but ALL telecom operators (do not confuse the two).
 
 These are our Unique Selling Propositions (USPs).
 """
