@@ -78,7 +78,7 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
         return
 
     # Fetch context summary to inject into system instruction
-    session_summary = conversation_store.get_session_summary(conversation_id)
+    session_summary = await run_in_threadpool(conversation_store.get_session_summary, conversation_id)
     
     current_language = admin_store.get_setting("agent_language", "Bengali")
     
@@ -110,7 +110,8 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     system_prompt = _build_system_prompt(session_summary, current_language)
     
     # Fetch recent raw messages for exact context if the user asks to read them
-    recent_messages = conversation_store.get_messages(conversation_id)[-15:]
+    recent_messages_full = await run_in_threadpool(conversation_store.get_messages, conversation_id)
+    recent_messages = recent_messages_full[-15:]
     chat_history_str = "\n".join([f"{msg.role}: {msg.content}" for msg in recent_messages])
     
     full_prompt = system_prompt + "\n" + VOICE_PERSONA_PROMPT.format(language=current_language, greeting=config["greeting"])
