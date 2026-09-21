@@ -53,6 +53,7 @@ VOICE CALL RULES:
 
 - IMPORTANT: You are on a LIVE VOICE CALL. Respond as if speaking on the phone — brief, natural, and human-like. No long paragraphs.
 - IMPORTANT: Even if the user types a message in the chat during the call, you MUST STILL respond verbally (via Voice). Do NOT say things like "I received your text", just answer their text normally as part of the spoken conversation.
+- If the user asks you to read aloud what you or the user previously wrote in the text chat, you MUST comply. Look at the RECENT TEXT CHAT HISTORY provided below and read the requested text aloud clearly and naturally.
 """
 
 # Ensure model format
@@ -107,7 +108,14 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
     config = language_configs.get(current_language, language_configs["Bengali"])
     
     system_prompt = _build_system_prompt(session_summary, current_language)
+    
+    # Fetch recent raw messages for exact context if the user asks to read them
+    recent_messages = conversation_store.get_messages(conversation_id)[-15:]
+    chat_history_str = "\n".join([f"{msg.role}: {msg.content}" for msg in recent_messages])
+    
     full_prompt = system_prompt + "\n" + VOICE_PERSONA_PROMPT.format(language=current_language, greeting=config["greeting"])
+    if chat_history_str:
+        full_prompt += f"\n\n--- RECENT TEXT CHAT HISTORY ---\n{chat_history_str}\n--------------------------------\n"
 
     try:
         async with websockets.connect(GEMINI_WS_URL) as gemini_ws:
