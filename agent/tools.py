@@ -26,7 +26,8 @@ def search_knowledge_base(query: str) -> str:
 	Why it's needed: Use this when the user asks a general question about Unified Cloud, its services, policies, or pricing.
 	"""
 	from agent.rag import search_documents
-	return search_documents(query)
+	result = search_documents(query)
+	return f"<context>\n{result}\n</context>"
 
 
 class SaveCollectedInformationInput(BaseModel):

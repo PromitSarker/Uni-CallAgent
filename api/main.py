@@ -52,6 +52,8 @@ def create_app() -> FastAPI:
 			llm = ChatGoogleGenerativeAI(
 				model=GEMINI_MODEL,
 				api_key=GEMINI_API_KEY,
+				temperature=0.0,
+				top_p=0.9,
 			)
 			res = llm.invoke("Hello, are you there?")
 			return {
