@@ -7,7 +7,7 @@ load_dotenv()
 DATABASE_URL = getenv("DATABASE_URL", "").strip().strip('"').strip("'")
 GEMINI_API_KEY = (getenv("GEMINI_API_KEY") or "").strip()
 GEMINI_MODEL = (getenv("GEMINI_MODEL") or "gemini-3.1-flash-lite").strip()
-GEMINI_LIVE_MODEL = (getenv("GEMINI_LIVE_MODEL") or "gemini-3.1-flash-live-preview").strip()
+GEMINI_LIVE_MODEL = (getenv("GEMINI_LIVE_MODEL") or "gemini-3.8-live").strip()
 
 SMTP_SERVER = getenv("SMTP_SERVER", "")
 SMTP_PORT = int(getenv("SMTP_PORT", "587"))
