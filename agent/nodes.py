@@ -205,6 +205,7 @@ def _build_formatter_prompt(language: str) -> str:
 		f"FORMATTING RULES (supplement the system instructions already given):\n"
 		f"1. CRITICAL: Your response must be plain, conversational {language} text ONLY. "
 		f"Before providing your final text, you MUST explain your reasoning inside `<thought>...</thought>` tags. "
+		f"After closing the `</thought>` tag, you MUST write the final conversational response for the user. "
 		f"No tool calls, JSON arrays, JSON objects, or raw system output outside of your thought tags. "
 		f"Never prefix your response with \"Result:\", \"System Info:\", or anything similar.\n"
 		f"2. If the tool result says 'Successfully saved', do NOT repeat this. "
@@ -400,12 +401,13 @@ def format_response_node(state: AgentState) -> Dict[str, Any]:
 	formatter_prompt = _build_formatter_prompt(current_language)
 
 	clean_messages = []
+	tool_results = []
 	for m in messages:
 		if isinstance(m, ToolMessage):
 			content = str(m.content)
 			if "Successfully saved" in content:
 				content = "The user's details were securely saved to the database. Acknowledge this naturally and proceed to the next step."
-			clean_messages.append(SystemMessage(content=f"System Info: {content}"))
+			tool_results.append(content)
 		elif isinstance(m, AIMessage):
 			if getattr(m, "tool_calls", None):
 				clean_content = ""
@@ -415,7 +417,15 @@ def format_response_node(state: AgentState) -> Dict[str, Any]:
 		else:
 			clean_messages.append(m)
 
-	all_messages = [SystemMessage(content=system_prompt)] + clean_messages + [SystemMessage(content=formatter_prompt)]
+	combined_human_text = ""
+	if tool_results:
+		combined_human_text += "\n".join(f"System Info: {tr}" for tr in tool_results)
+		combined_human_text += "\n\n"
+	combined_human_text += formatter_prompt
+
+	clean_messages.append(HumanMessage(content=combined_human_text.strip()))
+
+	all_messages = [SystemMessage(content=system_prompt)] + clean_messages
 
 	try:
 		start_time = time.time()
