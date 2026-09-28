@@ -16,3 +16,4 @@ google-generativeai
 websockets
 psycopg2-binary
 rank_bm25
+langchain-text-splitters
