@@ -19,14 +19,23 @@ def escalate(reason: str) -> str:
 
 
 def rewrite_query(original_query: str) -> str:
+	"""Fixes typos and contextualizes the query for RAG search."""
 	from langchain_google_genai import ChatGoogleGenerativeAI
 	from agent.config import GEMINI_API_KEY
 	llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY)
-	prompt = f"Rewrite the following search query to correct any spelling mistakes and make it a clear, standalone search query for a knowledge base. Output ONLY the corrected query.\\n\\nQuery: {original_query}"
+	prompt = (
+		"Rewrite the following search query to correct any spelling mistakes "
+		"and make it a clear, standalone search query for a knowledge base. "
+		"Output ONLY the corrected query, nothing else.\n\n"
+		f"Query: {original_query}"
+	)
 	try:
 		response = llm.invoke(prompt)
-		return response.content.strip()
-	except Exception:
+		corrected = response.content.strip()
+		print(f"[QueryRewriter] '{original_query}' -> '{corrected}'")
+		return corrected
+	except Exception as e:
+		print(f"[QueryRewriter] Failed: {e}, using original query")
 		return original_query
 
 @tool

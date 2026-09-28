@@ -71,6 +71,8 @@ def search_documents(query: str, k: int = 5) -> str:
 	if _vectorstore is None:
 		return "Vector store is offline."
 	
+	print(f"[RAG Search] Query: '{query}', k={k}")
+	
 	# 1. Dense Retriever setup (using custom query embeddings)
 	query_embeddings = GoogleGenerativeAIEmbeddings(
 		model="models/gemini-embedding-001",
@@ -83,8 +85,15 @@ def search_documents(query: str, k: int = 5) -> str:
 		query_embeddings.embed_query(query), k=k
 	)
 	
+	print(f"[RAG Search] Vector results: {len(vector_results)} docs")
+	for i, doc in enumerate(vector_results):
+		print(f"  [Vector #{i+1}] {doc.page_content[:100]}...")
+	
 	# 2. Sparse Retriever (BM25) setup
 	all_docs_data = _vectorstore.get()
+	total_docs = len(all_docs_data.get('documents', []))
+	print(f"[RAG Search] Total docs in ChromaDB: {total_docs}")
+	
 	if not all_docs_data.get('documents'):
 		if not vector_results:
 			return "No relevant information found in the knowledge base."
@@ -100,6 +109,10 @@ def search_documents(query: str, k: int = 5) -> str:
 		# Get BM25 results
 		sparse_results = bm25_retriever.invoke(query)
 		
+		print(f"[RAG Search] BM25 results: {len(sparse_results)} docs")
+		for i, doc in enumerate(sparse_results):
+			print(f"  [BM25 #{i+1}] {doc.page_content[:100]}...")
+		
 		# 3. Manual Reciprocal Rank Fusion (RRF) since we bypass EnsembleRetriever to keep custom embeddings
 		fused_scores = {}
 		for rank, doc in enumerate(sparse_results):
@@ -114,6 +127,10 @@ def search_documents(query: str, k: int = 5) -> str:
 			
 		reranked = sorted(fused_scores.values(), key=lambda x: x["score"], reverse=True)
 		final_results = [x["doc"] for x in reranked][:k]
+		
+		print(f"[RAG Search] Final RRF results: {len(final_results)} docs")
+		for i, item in enumerate(reranked[:k]):
+			print(f"  [RRF #{i+1} score={item['score']:.4f}] {item['doc'].page_content[:100]}...")
 	
 	if not final_results:
 		return "No relevant information found in the knowledge base."
