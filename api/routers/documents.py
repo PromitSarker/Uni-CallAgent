@@ -32,8 +32,8 @@ def create_document(payload: DocumentCreateRequest) -> DocumentResponse:
 		raise HTTPException(status_code=400, detail="Document text cannot be empty.")
 	
 	try:
-		doc_id = add_document(payload.text, payload.metadata)
-		return DocumentResponse(id=doc_id, status="created")
+		doc_ids = add_document(payload.text, payload.metadata)
+		return DocumentResponse(id=",".join(doc_ids), status=f"created {len(doc_ids)} chunks")
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Failed to add document: {str(e)}")
 
@@ -67,8 +67,8 @@ async def upload_document(file: UploadFile = File(...), metadata_str: str = Form
 		if not full_text.strip():
 			raise HTTPException(status_code=400, detail="Failed to extract any text from the PDF.")
 			
-		doc_id = add_document(full_text, metadata)
-		return DocumentResponse(id=doc_id, status="created from PDF")
+		doc_ids = add_document(full_text, metadata)
+		return DocumentResponse(id=",".join(doc_ids), status=f"created {len(doc_ids)} chunks from PDF")
 	except HTTPException:
 		raise
 	except Exception as e:

@@ -4,6 +4,7 @@ from typing import List
 from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from agent.config import GEMINI_API_KEY
 
@@ -31,16 +32,28 @@ except Exception as e:
         f.write(traceback.format_exc())
     _vectorstore = None
 
-def add_document(text: str, metadata: dict = None) -> str:
-	"""Adds a document to the Chroma vector store and returns the ID."""
+def add_document(text: str, metadata: dict = None) -> list[str]:
+	"""Adds a document to the Chroma vector store after chunking, and returns the IDs."""
 	if _vectorstore is None:
 		raise RuntimeError("Vector store is not initialized. Check crash.log.")
 	import uuid
-	doc_id = str(uuid.uuid4())
 	
-	doc = Document(page_content=text, metadata=metadata or {})
-	_vectorstore.add_documents(documents=[doc], ids=[doc_id])
-	return doc_id
+	text_splitter = RecursiveCharacterTextSplitter(
+		chunk_size=1000,
+		chunk_overlap=150,
+		separators=["\n\n", "\n", ". ", " ", ""]
+	)
+	chunks = text_splitter.split_text(text)
+	
+	doc_ids = []
+	docs = []
+	for chunk in chunks:
+		doc_id = str(uuid.uuid4())
+		doc_ids.append(doc_id)
+		docs.append(Document(page_content=chunk, metadata=metadata or {}))
+	
+	_vectorstore.add_documents(documents=docs, ids=doc_ids)
+	return doc_ids
 
 def delete_document(doc_id: str) -> bool:
 	"""Deletes a document from the Chroma vector store by ID."""
@@ -53,7 +66,7 @@ def delete_document(doc_id: str) -> bool:
 		# ID not found
 		return False
 
-def search_documents(query: str, k: int = 3) -> str:
+def search_documents(query: str, k: int = 5) -> str:
 	"""Searches the vector store using Hybrid Search (BM25 + Vector) and returns a formatted string of results."""
 	if _vectorstore is None:
 		return "Vector store is offline."
