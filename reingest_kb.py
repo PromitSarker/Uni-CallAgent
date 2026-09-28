@@ -155,7 +155,7 @@ SSL Certificates: Web security certificates issued by global certificate authori
         "title": "Software Service Partners & Managed Application Ecosystem",
         "text": """Software Service Partners & Managed Application Ecosystem
 We offer a one-stop solution by supplying and managing access to software applications through an AI-powered ecosystem of software partners. We do not build or develop the core software applications we provide. Instead, we partner with software providers, supply their applications to users, and manage the surrounding application ecosystem. Where needed, we can develop AI solutions to support or enhance that ecosystem.
-Software we provide through partners:
+We offer :
 Accounting Management System
 Inventory Management System
 HR & Payroll Software (HRIS)
