@@ -2,6 +2,7 @@ import os
 from typing import List
 
 from langchain_chroma import Chroma
+from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from agent.config import GEMINI_API_KEY
@@ -53,23 +54,59 @@ def delete_document(doc_id: str) -> bool:
 		return False
 
 def search_documents(query: str, k: int = 3) -> str:
-	"""Searches the vector store and returns a formatted string of results."""
+	"""Searches the vector store using Hybrid Search (BM25 + Vector) and returns a formatted string of results."""
 	if _vectorstore is None:
 		return "Vector store is offline."
-	# Use retrieval_query task type for queries (asymmetric RAG)
+	
+	# 1. Dense Retriever setup (using custom query embeddings)
 	query_embeddings = GoogleGenerativeAIEmbeddings(
 		model="models/gemini-embedding-001",
 		google_api_key=GEMINI_API_KEY,
 		task_type="retrieval_query"
 	)
-	results = _vectorstore.similarity_search_by_vector(
+	
+	# We perform manual search for the vector part to keep the 'retrieval_query' embeddings
+	vector_results = _vectorstore.similarity_search_by_vector(
 		query_embeddings.embed_query(query), k=k
 	)
-	if not results:
+	
+	# 2. Sparse Retriever (BM25) setup
+	all_docs_data = _vectorstore.get()
+	if not all_docs_data.get('documents'):
+		if not vector_results:
+			return "No relevant information found in the knowledge base."
+		final_results = vector_results
+	else:
+		all_documents = [
+			Document(page_content=doc, metadata=meta) 
+			for doc, meta in zip(all_docs_data['documents'], all_docs_data['metadatas'])
+		]
+		bm25_retriever = BM25Retriever.from_documents(all_documents)
+		bm25_retriever.k = k
+		
+		# Get BM25 results
+		sparse_results = bm25_retriever.invoke(query)
+		
+		# 3. Manual Reciprocal Rank Fusion (RRF) since we bypass EnsembleRetriever to keep custom embeddings
+		fused_scores = {}
+		for rank, doc in enumerate(sparse_results):
+			if doc.page_content not in fused_scores:
+				fused_scores[doc.page_content] = {"doc": doc, "score": 0}
+			fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
+			
+		for rank, doc in enumerate(vector_results):
+			if doc.page_content not in fused_scores:
+				fused_scores[doc.page_content] = {"doc": doc, "score": 0}
+			fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
+			
+		reranked = sorted(fused_scores.values(), key=lambda x: x["score"], reverse=True)
+		final_results = [x["doc"] for x in reranked][:k]
+	
+	if not final_results:
 		return "No relevant information found in the knowledge base."
 	
 	formatted = []
-	for doc in results:
+	for doc in final_results:
 		formatted.append(f"<knowledge_base_document>\n{doc.page_content}\n</knowledge_base_document>")
 	
 	return "\n\n".join(formatted)
