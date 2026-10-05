@@ -112,7 +112,7 @@ Platform as a Service (PaaS): Managed development and deployment environments.
 Software as a Service (SaaS): Ready-to-use business application platforms.
 GPU as a Service (GPUaaS): High-performance on-demand GPU compute tailored for AI/ML model training, inference workloads, rendering, and complex scientific calculations.
 Cloud VPS: Scalable virtual private servers with guaranteed resource allocation.
-Dedicated Bare-Metal Servers: Enterprise-grade bare-metal hardware designed for high-traffic databases, ERP systems, and heavy enterprise workloads (computable for SAP, Oracle, Akhil Systems, etc.).
+Dedicated Cloud Servers: Enterprise-grade cloud hardware designed for high-traffic databases, ERP systems, and heavy enterprise workloads (computable for SAP, Oracle, Akhil Systems, etc.).
 Cloud Storage & Automated Backup: Scalable file and object storage paired with automated disaster recovery systems.
 Repository Service: Scalable Private and Public repository service powered by Unified-Git.
 Bundled Enterprise Licensing: Windows Virtual Machines come pre-installed with official, integrated Windows Server and SQL Server licenses embedded into instance pricing—eliminating separate licensing headaches."""
@@ -178,7 +178,7 @@ Hosting Tiers:
 Starter Plan: Designed for personal websites, portfolios, and small businesses starting out.
 Business Plan: Designed for growing businesses requiring increased compute resources and enhanced security.
 Professional Plan (Most Popular): Optimized for established companies running multiple sites, e-commerce stores, or SaaS apps.
-Enterprise Plan: Fully customizable bare-metal or cloud infrastructure with dedicated resources, priority engineering support, and SLA guarantees."""
+Enterprise Plan: Fully customizable cloud infrastructure with dedicated resources, priority engineering support, and SLA guarantees."""
     },
     {
         "title": "Managed Operations & Pricing Model",
