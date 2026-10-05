@@ -7,9 +7,11 @@ from agent.rag import add_document, delete_document, list_documents
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
+from typing import Optional
+
 class DocumentCreateRequest(BaseModel):
 	text: str
-	metadata: dict = None
+	metadata: Optional[dict] = None
 
 class DocumentResponse(BaseModel):
 	id: str
