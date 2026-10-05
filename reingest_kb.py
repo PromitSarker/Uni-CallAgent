@@ -219,11 +219,24 @@ import time
 
 total_chunks = 0
 for section in sections:
-    doc_ids = add_document(section["text"], {"title": section["title"]})
-    chunk_count = len(doc_ids)
-    total_chunks += chunk_count
-    print(f"  [{chunk_count} chunks] {section['title']}")
-    time.sleep(3)  # Prevent Google API rate limits (429 RESOURCE_EXHAUSTED)
+    success = False
+    attempts = 0
+    while not success and attempts < 10:
+        try:
+            doc_ids = add_document(section["text"], {"title": section["title"]})
+            chunk_count = len(doc_ids)
+            total_chunks += chunk_count
+            print(f"  [{chunk_count} chunks] {section['title']}")
+            success = True
+            time.sleep(5)  # Wait 5 seconds between successful requests
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                attempts += 1
+                wait_time = 15 * attempts
+                print(f"  [Rate Limit Hit] Waiting {wait_time} seconds before retrying...")
+                time.sleep(wait_time)
+            else:
+                raise e
 
 # Step 3: Verify
 print("\n" + "=" * 60)
