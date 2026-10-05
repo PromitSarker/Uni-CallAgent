@@ -215,12 +215,15 @@ These are our Unique Selling Propositions (USPs)."""
     },
 ]
 
+import time
+
 total_chunks = 0
 for section in sections:
     doc_ids = add_document(section["text"], {"title": section["title"]})
     chunk_count = len(doc_ids)
     total_chunks += chunk_count
     print(f"  [{chunk_count} chunks] {section['title']}")
+    time.sleep(3)  # Prevent Google API rate limits (429 RESOURCE_EXHAUSTED)
 
 # Step 3: Verify
 print("\n" + "=" * 60)
