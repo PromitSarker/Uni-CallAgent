@@ -53,7 +53,7 @@ def _refresh_bm25():
 		return
 	
 	all_documents = [
-		Document(page_content=doc, metadata=meta) 
+		Document(page_content=doc, metadata=meta or {}) 
 		for doc, meta in zip(all_docs_data['documents'], all_docs_data['metadatas'])
 	]
 	_bm25_retriever = BM25Retriever.from_documents(all_documents)
