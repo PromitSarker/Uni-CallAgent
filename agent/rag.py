@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 from typing import List
 
 from langchain_chroma import Chroma
@@ -10,6 +12,9 @@ from agent.config import GEMINI_API_KEY
 
 # Persist directory for ChromaDB
 CHROMA_PERSIST_DIR = os.path.join(os.path.dirname(__file__), "..", "chroma_db")
+
+_chroma_lock = threading.Lock()
+_bm25_retriever = None
 
 # Initialize embeddings
 try:
@@ -32,6 +37,30 @@ except Exception as e:
         f.write(traceback.format_exc())
     _vectorstore = None
 
+def _refresh_bm25():
+	global _bm25_retriever
+	if _vectorstore is None:
+		return
+	with _chroma_lock:
+		try:
+			all_docs_data = _vectorstore.get()
+		except Exception as e:
+			print(f"Error fetching from Chroma: {e}")
+			return
+
+	if not all_docs_data.get('documents'):
+		_bm25_retriever = None
+		return
+	
+	all_documents = [
+		Document(page_content=doc, metadata=meta) 
+		for doc, meta in zip(all_docs_data['documents'], all_docs_data['metadatas'])
+	]
+	_bm25_retriever = BM25Retriever.from_documents(all_documents)
+
+# Initial BM25 load
+_refresh_bm25()
+
 def add_document(text: str, metadata: dict = None) -> list[str]:
 	"""Adds a document to the Chroma vector store after chunking, and returns the IDs."""
 	if _vectorstore is None:
@@ -52,7 +81,10 @@ def add_document(text: str, metadata: dict = None) -> list[str]:
 		doc_ids.append(doc_id)
 		docs.append(Document(page_content=chunk, metadata=metadata or {}))
 	
-	_vectorstore.add_documents(documents=docs, ids=doc_ids)
+	with _chroma_lock:
+		_vectorstore.add_documents(documents=docs, ids=doc_ids)
+	
+	_refresh_bm25()
 	return doc_ids
 
 def delete_document(doc_id: str) -> bool:
@@ -60,7 +92,9 @@ def delete_document(doc_id: str) -> bool:
 	if _vectorstore is None:
 		return False
 	try:
-		_vectorstore.delete(ids=[doc_id])
+		with _chroma_lock:
+			_vectorstore.delete(ids=[doc_id])
+		_refresh_bm25()
 		return True
 	except ValueError:
 		# ID not found
@@ -80,57 +114,56 @@ def search_documents(query: str, k: int = 5) -> str:
 		task_type="retrieval_query"
 	)
 	
-	# We perform manual search for the vector part to keep the 'retrieval_query' embeddings
-	vector_results = _vectorstore.similarity_search_by_vector(
-		query_embeddings.embed_query(query), k=k
-	)
+	vector_results = []
+	# Retry logic for embeddings API
+	for attempt in range(3):
+		try:
+			embedded_query = query_embeddings.embed_query(query)
+			with _chroma_lock:
+				vector_results = _vectorstore.similarity_search_by_vector(embedded_query, k=k)
+			break
+		except Exception as e:
+			print(f"[RAG Search] Embeddings attempt {attempt + 1} failed: {e}")
+			time.sleep(2 ** attempt)
 	
 	print(f"[RAG Search] Vector results: {len(vector_results)} docs")
 	for i, doc in enumerate(vector_results):
 		print(f"  [Vector #{i+1}] {doc.page_content[:100]}...")
 	
 	# 2. Sparse Retriever (BM25) setup
-	all_docs_data = _vectorstore.get()
-	total_docs = len(all_docs_data.get('documents', []))
-	print(f"[RAG Search] Total docs in ChromaDB: {total_docs}")
-	
-	if not all_docs_data.get('documents'):
-		if not vector_results:
-			return "No relevant information found in the knowledge base."
-		final_results = vector_results
-	else:
-		all_documents = [
-			Document(page_content=doc, metadata=meta) 
-			for doc, meta in zip(all_docs_data['documents'], all_docs_data['metadatas'])
-		]
-		bm25_retriever = BM25Retriever.from_documents(all_documents)
-		bm25_retriever.k = k
-		
-		# Get BM25 results
-		sparse_results = bm25_retriever.invoke(query)
+	sparse_results = []
+	if _bm25_retriever is not None:
+		_bm25_retriever.k = k
+		try:
+			sparse_results = _bm25_retriever.invoke(query)
+		except Exception as e:
+			print(f"[RAG Search] BM25 invoke failed: {e}")
 		
 		print(f"[RAG Search] BM25 results: {len(sparse_results)} docs")
 		for i, doc in enumerate(sparse_results):
 			print(f"  [BM25 #{i+1}] {doc.page_content[:100]}...")
+	
+	if not vector_results and not sparse_results:
+		return "No relevant information found in the knowledge base."
 		
-		# 3. Manual Reciprocal Rank Fusion (RRF) since we bypass EnsembleRetriever to keep custom embeddings
-		fused_scores = {}
-		for rank, doc in enumerate(sparse_results):
-			if doc.page_content not in fused_scores:
-				fused_scores[doc.page_content] = {"doc": doc, "score": 0}
-			fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
-			
-		for rank, doc in enumerate(vector_results):
-			if doc.page_content not in fused_scores:
-				fused_scores[doc.page_content] = {"doc": doc, "score": 0}
-			fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
-			
-		reranked = sorted(fused_scores.values(), key=lambda x: x["score"], reverse=True)
-		final_results = [x["doc"] for x in reranked][:k]
+	# 3. Manual Reciprocal Rank Fusion (RRF)
+	fused_scores = {}
+	for rank, doc in enumerate(sparse_results):
+		if doc.page_content not in fused_scores:
+			fused_scores[doc.page_content] = {"doc": doc, "score": 0}
+		fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
 		
-		print(f"[RAG Search] Final RRF results: {len(final_results)} docs")
-		for i, item in enumerate(reranked[:k]):
-			print(f"  [RRF #{i+1} score={item['score']:.4f}] {item['doc'].page_content[:100]}...")
+	for rank, doc in enumerate(vector_results):
+		if doc.page_content not in fused_scores:
+			fused_scores[doc.page_content] = {"doc": doc, "score": 0}
+		fused_scores[doc.page_content]["score"] += 1 / (rank + 60)
+		
+	reranked = sorted(fused_scores.values(), key=lambda x: x["score"], reverse=True)
+	final_results = [x["doc"] for x in reranked][:k]
+	
+	print(f"[RAG Search] Final RRF results: {len(final_results)} docs")
+	for i, item in enumerate(reranked[:k]):
+		print(f"  [RRF #{i+1} score={item['score']:.4f}] {item['doc'].page_content[:100]}...")
 	
 	if not final_results:
 		return "No relevant information found in the knowledge base."
@@ -145,7 +178,8 @@ def list_documents() -> List[dict]:
 	"""Returns all documents from the vector store."""
 	if _vectorstore is None:
 		return []
-	results = _vectorstore.get()
+	with _chroma_lock:
+		results = _vectorstore.get()
 	documents = []
 	
 	if not results or "ids" not in results:
