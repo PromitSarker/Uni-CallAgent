@@ -318,6 +318,25 @@ function App() {
   const startCall = async () => {
     setIsConnecting(true);
     hasAIPickedUpRef.current = false;
+
+    // SAFARI FIX 1: Create AudioContext synchronously BEFORE any 'await' (promises).
+    // This satisfies Safari's strict autoplay policy requiring direct user gesture.
+    let audioContext;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    try {
+      // Try to request a specific sample rate (Chrome/Firefox/Modern Safari)
+      audioContext = new AudioCtx({ sampleRate: 16000 });
+    } catch (e) {
+      // Fallback for older Safari which throws if options are passed
+      audioContext = new AudioCtx();
+    }
+    audioContextRef.current = audioContext;
+
+    // Immediately attempt to resume it (Safari needs this in the click handler)
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().catch(() => {});
+    }
+
     try {
       // 1. Get Microphone
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -328,12 +347,6 @@ function App() {
         }
       });
       mediaStreamRef.current = stream;
-
-      // Create a SINGLE unified AudioContext for the entire session (16kHz)
-      // This prevents Windows/Chrome from constantly switching hardware sample rates,
-      // which causes severe pitch shifting ("chipmunk" or "Darth Vader" effects).
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      audioContextRef.current = audioContext;
 
       startRinging(audioContext);
 
@@ -419,6 +432,13 @@ function App() {
       processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
+        // SAFARI FIX 2: Explicitly fill outputBuffer with silence. 
+        // Safari optimizes away ScriptProcessorNodes that don't output audio, stopping the onaudioprocess event entirely!
+        const outputData = e.outputBuffer.getChannelData(0);
+        for (let i = 0; i < outputData.length; i++) {
+            outputData[i] = 0;
+        }
+
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
         // Mute microphone upload during ringing. 

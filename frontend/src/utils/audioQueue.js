@@ -89,7 +89,7 @@ export class AudioQueue {
             
             // If we are falling behind (queue starved), reset the start time 
             if (this.nextStartTime < this.audioContext.currentTime) {
-                this.nextStartTime = this.audioContext.currentTime + 0.05;
+                this.nextStartTime = this.audioContext.currentTime + 0.1; // Increased to 100ms for Safari/iOS stability
             }
 
             const source = this.audioContext.createBufferSource();
