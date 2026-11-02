@@ -12,6 +12,8 @@ from datetime import datetime
 from agent.config import GEMINI_API_KEY, GEMINI_LIVE_MODEL
 from agent.nodes import _build_system_prompt
 from agent.live_tools import LIVE_TOOL_DECLARATIONS, LIVE_TOOLS_MAP
+from agent.greetings import get_language_config, load_cached_greeting
+from agent.rag import get_kb_text
 from api.store import conversation_store
 from api.admin_store import admin_store
 from api.schemas import ConversationMessage
@@ -38,7 +40,7 @@ VOICE CALL RULES:
 - Keep your responses comprehensive but conversational — this is a phone call. Aim for around 5-6 sentences per turn to ensure no key points are missed.
 - Do NOT use markdown, bullet points, numbered lists, or any text formatting. Speak naturally as if talking on the phone.
 - Do NOT say "star" or read out formatting symbols. Just speak plainly.
-- STRICT RULE: When greeting, you MUST start exactly with "{greeting}" (Do not change this greeting).
+- {greeting_rule}
 - CONVERSATION FLOW:
   1. Just answer the caller's questions naturally and briefly.
 - NEVER REPEAT YOURSELF: Do not give the same answer, statistic, or pitch twice in a conversation. Do not ask the exact same question twice. If a number or claim has already been stated this call (e.g., a latency figure, a price, an uptime percentage), do NOT restate it — instead pivot to a different benefit, a new angle, or ask what else the caller wants to know. If you notice you are repeating information, stop and change direction.
@@ -56,6 +58,45 @@ VOICE CALL RULES:
 - If the user asks you to read aloud what you or the user previously wrote in the text chat, you MUST comply. Look at the RECENT TEXT CHAT HISTORY provided below and read the requested text aloud clearly and naturally.
 """
 
+# Greeting rule when the model itself must speak the greeting (live generation).
+GREETING_RULE_LIVE = 'STRICT RULE: When greeting, you MUST start exactly with "{greeting}" (Do not change this greeting).'
+# Greeting rule when the server already played the pre-rendered greeting audio.
+GREETING_RULE_PLAYED = (
+    'The caller has ALREADY been greeted automatically with: "{greeting}". '
+    'Do NOT greet again and do NOT repeat that greeting. Stay silent until the caller speaks, '
+    'then respond directly to what they say.'
+)
+
+# --- Latency settings (all overridable via environment) -------------------------
+# Play the pre-rendered greeting instantly instead of generating it live.
+USE_CACHED_GREETING = os.getenv("VOICE_USE_CACHED_GREETING", "1") != "0"
+# Put the whole knowledge base in the system prompt (when small enough) so spoken
+# questions need no search round trip. Above this many characters we fall back to
+# the search tool.
+INLINE_KB = os.getenv("VOICE_INLINE_KB", "1") != "0"
+INLINE_KB_MAX_CHARS = int(os.getenv("VOICE_INLINE_KB_MAX_CHARS", "60000"))
+# Server-side end-of-speech detection. Gemini's default waits noticeably longer
+# before deciding the caller has finished. Set VOICE_VAD_SILENCE_MS=0 to use Gemini's defaults.
+VAD_SILENCE_MS = int(os.getenv("VOICE_VAD_SILENCE_MS", "500"))
+VAD_PREFIX_PADDING_MS = int(os.getenv("VOICE_VAD_PREFIX_PADDING_MS", "100"))
+VAD_END_SENSITIVITY = os.getenv("VOICE_VAD_END_SENSITIVITY", "END_SENSITIVITY_HIGH")
+VAD_START_SENSITIVITY = os.getenv("VOICE_VAD_START_SENSITIVITY", "")  # empty = Gemini default
+
+
+def _realtime_input_config():
+    """Gemini realtimeInputConfig for faster turn-taking, or None for defaults."""
+    if VAD_SILENCE_MS <= 0:
+        return None
+    aad = {
+        "endOfSpeechSensitivity": VAD_END_SENSITIVITY,
+        "prefixPaddingMs": VAD_PREFIX_PADDING_MS,
+        "silenceDurationMs": VAD_SILENCE_MS,
+    }
+    if VAD_START_SENSITIVITY:
+        aad["startOfSpeechSensitivity"] = VAD_START_SENSITIVITY
+    return {"automaticActivityDetection": aad}
+
+
 # Ensure model format
 if not GEMINI_LIVE_MODEL.startswith("models/"):
     formatted_model = f"models/{GEMINI_LIVE_MODEL}"
@@ -63,6 +104,26 @@ else:
     formatted_model = GEMINI_LIVE_MODEL
 
 GEMINI_WS_URL = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key={GEMINI_API_KEY}"
+
+async def _connect_gemini():
+    """Open the Gemini Live websocket (started early so it overlaps the DB lookups)."""
+    return await websockets.connect(GEMINI_WS_URL)
+
+
+async def _safe_result(task, default, what: str):
+    """Await a background lookup; on failure log it and use ``default`` (the call must still work)."""
+    try:
+        return await task
+    except Exception as e:
+        print(f"Warning: {what} failed, continuing without it: {e}")
+        return default
+
+
+async def _start_gemini_session(gemini_ws, setup_message: dict):
+    """Send setup and wait for setupComplete. Raises ConnectionClosed if Gemini rejects the setup."""
+    await gemini_ws.send(json.dumps(setup_message))
+    return await gemini_ws.recv()
+
 
 @router.websocket("/ws/{conversation_id}")
 async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
@@ -77,81 +138,101 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
         await websocket.close()
         return
 
-    # Fetch context summary to inject into system instruction
-    session_summary = await run_in_threadpool(conversation_store.get_session_summary, conversation_id)
-    
-    current_language = admin_store.get_setting("agent_language", "Bengali")
-    
-    language_configs = {
-        "Bengali": {
-            "code": "bn-BD",
-            "greeting": "ইউনিফাইড ক্লাউডে আপনাকে স্বাগতম। আমরা আপনাকে কীভাবে সাহায্য করতে পারি?",
-            "voice": "Leda" # Just use default or try to rely on what works
-        },
-        "English": {
-            "code": "en-US",
-            "greeting": "Hello! Thank you for calling Unified Cloud. How can I help you today?",
-            "voice": "Aoede"
-        },
-        "Spanish": {
-            "code": "es-ES",
-            "greeting": "¡Hola! Gracias por llamar a Unified Cloud. ¿Cómo puedo ayudarle hoy?",
-            "voice": "Aoede"
-        },
-        "Portuguese": {
-            "code": "pt-PT",
-            "greeting": "Olá! Obrigado por ligar para a Unified Cloud. Como posso ajudá-lo hoje?",
-            "voice": "Aoede"
-        }
-    }
-    
-    config = language_configs.get(current_language, language_configs["Bengali"])
-    
-    system_prompt = _build_system_prompt(session_summary, current_language)
-    
-    # Fetch recent raw messages for exact context if the user asks to read them
-    recent_messages_full = await run_in_threadpool(conversation_store.get_messages, conversation_id)
-    recent_messages = recent_messages_full[-15:]
-    chat_history_str = "\n".join([f"{msg.role}: {msg.content}" for msg in recent_messages])
-    
-    full_prompt = system_prompt + "\n" + VOICE_PERSONA_PROMPT.format(language=current_language, greeting=config["greeting"])
-    if chat_history_str:
-        full_prompt += f"\n\n--- RECENT TEXT CHAT HISTORY ---\n{chat_history_str}\n--------------------------------\n"
+    gemini_ws = None
+    # Everything below that runs in the background; cleaned up in `finally`.
+    lookup_tasks = []
+    connect_task = asyncio.create_task(_connect_gemini())  # overlaps TLS/WS handshake with the DB reads
+    lookup_tasks.append(connect_task)
 
     try:
-        async with websockets.connect(GEMINI_WS_URL) as gemini_ws:
-            # 1. Send Setup Message
-            setup_message = {
-                "setup": {
-                    "model": formatted_model,
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "responseModalities": ["AUDIO"],
-                        "speechConfig": {
-                            "voiceConfig": {
-                                "prebuiltVoiceConfig": {
-                                    "voiceName": config["voice"]
-                                }
-                            },
-                            "languageCode": config["code"]
-                        }
-                    },
-                    "systemInstruction": {
-                        "parts": [{"text": full_prompt}]
-                    },
-                    "tools": [{"functionDeclarations": LIVE_TOOL_DECLARATIONS}]
-                }
-            }
-            print(f"Sending setup with model: {formatted_model}")
-            await gemini_ws.send(json.dumps(setup_message))
+        # All DB/Chroma reads are blocking, so run them in the threadpool and in parallel.
+        language_task = asyncio.create_task(run_in_threadpool(admin_store.get_setting, "agent_language", "Bengali"))
+        summary_task = asyncio.create_task(run_in_threadpool(conversation_store.get_session_summary, conversation_id))
+        messages_task = asyncio.create_task(run_in_threadpool(conversation_store.get_messages, conversation_id))
+        lookup_tasks += [language_task, summary_task, messages_task]
+        kb_task = None
+        if INLINE_KB:
+            kb_task = asyncio.create_task(run_in_threadpool(get_kb_text, INLINE_KB_MAX_CHARS))
+            lookup_tasks.append(kb_task)
 
-            # Receive the setup response
-            setup_response = await gemini_ws.recv()
-            print("Setup response:", setup_response)
-            
-            # No artificial delay. We rely entirely on Gemini's natural generation time to provide the ringing duration.
-            
-            # Trigger initial greeting
+        current_language = await language_task
+        config = get_language_config(current_language)
+
+        # Play the pre-rendered greeting immediately; the live session keeps setting up meanwhile.
+        greeting_played = False
+        if USE_CACHED_GREETING:
+            cached_greeting_b64 = load_cached_greeting(current_language)
+            if cached_greeting_b64:
+                await websocket.send_json({"audioB64": cached_greeting_b64})
+                await websocket.send_json({"turnComplete": True})
+                greeting_played = True
+                print(f"Played cached greeting ({current_language}) after {time.time() - start_time:.2f}s")
+
+        session_summary = await _safe_result(summary_task, "", "loading session summary")
+        recent_messages_full = await _safe_result(messages_task, [], "loading conversation history")
+        kb_text = await _safe_result(kb_task, None, "loading knowledge base") if kb_task else None
+
+        # Fetch recent raw messages for exact context if the user asks to read them
+        recent_messages = recent_messages_full[-15:]
+        chat_history_str = "\n".join([f"{msg.role}: {msg.content}" for msg in recent_messages])
+
+        system_prompt = _build_system_prompt(session_summary, current_language, kb_text=kb_text)
+        greeting_rule = (GREETING_RULE_PLAYED if greeting_played else GREETING_RULE_LIVE).format(greeting=config["greeting"])
+        full_prompt = system_prompt + "\n" + VOICE_PERSONA_PROMPT.format(language=current_language, greeting_rule=greeting_rule)
+        if chat_history_str:
+            full_prompt += f"\n\n--- RECENT TEXT CHAT HISTORY ---\n{chat_history_str}\n--------------------------------\n"
+
+        # With the KB inlined there is nothing to search, so don't offer the search tool.
+        declarations = LIVE_TOOL_DECLARATIONS
+        if kb_text:
+            declarations = [d for d in declarations if d["name"] != "search_knowledge_base"]
+        print(f"Voice session: language={current_language} greeting={'cached' if greeting_played else 'live'} "
+              f"kb={'inline(' + str(len(kb_text)) + ' chars)' if kb_text else 'search-tool'}")
+
+        gemini_ws = await connect_task
+
+        # 1. Send Setup Message
+        setup_message = {
+            "setup": {
+                "model": formatted_model,
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "responseModalities": ["AUDIO"],
+                    "speechConfig": {
+                        "voiceConfig": {
+                            "prebuiltVoiceConfig": {
+                                "voiceName": config["voice"]
+                            }
+                        },
+                        "languageCode": config["code"]
+                    }
+                },
+                "systemInstruction": {
+                    "parts": [{"text": full_prompt}]
+                },
+                "tools": [{"functionDeclarations": declarations}]
+            }
+        }
+        realtime_cfg = _realtime_input_config()
+        if realtime_cfg:
+            setup_message["setup"]["realtimeInputConfig"] = realtime_cfg
+        print(f"Sending setup with model: {formatted_model}")
+        try:
+            setup_response = await _start_gemini_session(gemini_ws, setup_message)
+        except ConnectionClosed as e:
+            if not realtime_cfg:
+                raise
+            # Gemini rejected the setup; most likely the tuned turn-detection settings
+            # (e.g. a different model that doesn't support them). Retry once with defaults
+            # rather than failing the call.
+            print(f"Gemini closed the session during setup ({e}); retrying without realtimeInputConfig")
+            del setup_message["setup"]["realtimeInputConfig"]
+            gemini_ws = await _connect_gemini()
+            setup_response = await _start_gemini_session(gemini_ws, setup_message)
+        print("Setup response:", setup_response)
+
+        # Only ask the model to greet when we did not already play the greeting.
+        if not greeting_played:
             initial_greeting_message = {
                 "clientContent": {
                     "turns": [
@@ -165,22 +246,39 @@ async def voice_websocket_endpoint(websocket: WebSocket, conversation_id: str):
             }
             await gemini_ws.send(json.dumps(initial_greeting_message))
 
-            # Start proxying
-            client_to_gemini_task = asyncio.create_task(proxy_client_to_gemini(websocket, gemini_ws, conversation_id))
-            gemini_to_client_task = asyncio.create_task(proxy_gemini_to_client(websocket, gemini_ws, conversation_id, session_tokens))
+        # Start proxying
+        client_to_gemini_task = asyncio.create_task(proxy_client_to_gemini(websocket, gemini_ws, conversation_id))
+        gemini_to_client_task = asyncio.create_task(proxy_gemini_to_client(
+            websocket, gemini_ws, conversation_id, session_tokens, expect_greeting=not greeting_played))
 
-            done, pending = await asyncio.wait(
-                [client_to_gemini_task, gemini_to_client_task],
-                return_when=asyncio.FIRST_COMPLETED
-            )
-            for task in pending:
-                task.cancel()
+        done, pending = await asyncio.wait(
+            [client_to_gemini_task, gemini_to_client_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
 
     except WebSocketDisconnect:
         print(f"Client disconnected from WS for conversation {conversation_id}")
     except Exception as e:
         print(f"Error in voice websocket: {str(e)}")
     finally:
+        for t in lookup_tasks:
+            if not t.done():
+                t.cancel()
+            elif t is connect_task and not t.cancelled() and t.exception() is None:
+                # Connected but never adopted (e.g. failure before we awaited it): don't leak it.
+                if t.result() is not gemini_ws:
+                    try:
+                        await t.result().close()
+                    except Exception:
+                        pass
+        if gemini_ws is not None:
+            try:
+                await gemini_ws.close()
+            except Exception:
+                pass
+
         session_duration = time.time() - start_time
         # Record final session tokens to DB if any were captured, using a threadpool to avoid blocking ASGI loop
         try:
@@ -270,11 +368,12 @@ async def proxy_client_to_gemini(client_ws: WebSocket, gemini_ws, conversation_i
         print(f"client_to_gemini exception (after {chunk_count} chunks):", str(e))
 
 
-async def proxy_gemini_to_client(client_ws: WebSocket, gemini_ws, conversation_id: str, session_tokens: dict):
+async def proxy_gemini_to_client(client_ws: WebSocket, gemini_ws, conversation_id: str, session_tokens: dict, expect_greeting: bool = True):
     """Reads from Gemini and routes audio/text to client, and handles tool calls."""
     response_count = 0
     current_turn_output = 0
-    is_initial_greeting = True
+    # True only while the model itself is generating the opening greeting (no cached greeting was played).
+    is_initial_greeting = expect_greeting
     initial_greeting_buffer = []
     
     try:
@@ -412,7 +511,8 @@ async def proxy_gemini_to_client(client_ws: WebSocket, gemini_ws, conversation_i
                             result = f"Error ending call: {str(e)}"
                     elif f_name in LIVE_TOOLS_MAP:
                         try:
-                            result = LIVE_TOOLS_MAP[f_name](f_args)
+                            # Tools do blocking DB/network work; keep it off the event loop so audio keeps flowing.
+                            result = await run_in_threadpool(LIVE_TOOLS_MAP[f_name], f_args)
                         except Exception as e:
                             result = f"Error: {str(e)}"
                     else:

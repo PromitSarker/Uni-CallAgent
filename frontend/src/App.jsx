@@ -14,6 +14,11 @@ const generateUUID = () => {
   });
 };
 
+// After the opening greeting finishes playing, keep the mic muted this long (covers
+// output-device latency and the acoustic tail) before allowing the caller to speak.
+// Was 1000 ms; echo cancellation is on, so a short tail is enough.
+const GREETING_UNMUTE_DELAY_MS = 300;
+
 function App() {
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState('');
@@ -71,7 +76,7 @@ function App() {
       speakingTimeoutRef.current = setTimeout(() => {
         isAgentSpeakingRef.current = false;
         isInitialGreetingRef.current = false; // After first greeting ends, allow barge-in forever
-      }, 1000); // 1000ms hang time to clear hardware latency and acoustic tail
+      }, GREETING_UNMUTE_DELAY_MS); // hang time to clear hardware latency and acoustic tail
     }
   };
 

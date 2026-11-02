@@ -1,4 +1,6 @@
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
@@ -6,6 +8,7 @@ from fastapi import HTTPException
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 from agent.graph import agent
+from agent.nodes import summarize_conversation_node
 from api.schemas import (
 	ChatMessageRequest,
 	ChatMessageResponse,
@@ -17,6 +20,43 @@ from api.schemas import (
 from api.store import conversation_store
 
 _ALLOWED_INTENTS = {"inquiry", "lead", "escalate"}
+
+# --- Background conversation summaries ---------------------------------------------
+# The rolling summary is only needed for the *next* turn, so it is computed after the
+# reply has been returned instead of blocking it with an extra LLM call.
+# One worker => summaries run FIFO and can never finish out of order; a job whose
+# conversation has already been re-submitted with newer messages is skipped.
+_summary_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="summary")
+_summary_lock = threading.Lock()
+_summary_latest: Dict[str, int] = {}
+_summary_counter = 0
+
+
+def _summarize_in_background(conversation_id: str, state: Dict[str, Any]) -> None:
+	global _summary_counter
+	with _summary_lock:
+		_summary_counter += 1
+		ticket = _summary_counter
+		_summary_latest[conversation_id] = ticket
+
+	def job() -> None:
+		try:
+			with _summary_lock:
+				superseded = _summary_latest.get(conversation_id) != ticket
+			if superseded:
+				return  # a newer turn will produce a more complete summary
+			summarize_conversation_node(state)
+		except Exception as e:
+			print(f"Background summarize failed for {conversation_id}: {e}")
+		finally:
+			with _summary_lock:
+				if _summary_latest.get(conversation_id) == ticket:
+					_summary_latest.pop(conversation_id, None)
+
+	try:
+		_summary_executor.submit(job)
+	except Exception as e:  # e.g. executor shut down during exit
+		print(f"Could not schedule summary for {conversation_id}: {e}")
 
 
 def _now_utc() -> datetime:
@@ -139,6 +179,9 @@ def send_message(conversation_id: str, payload: ChatMessageRequest) -> ChatMessa
 				"message": "Could not store conversation right now",
 			},
 		)
+
+	# Reply is ready and stored; update the rolling summary off the request path.
+	_summarize_in_background(conversation_id, result_state)
 
 	return ChatMessageResponse(
 		conversation_id=conversation_id,

@@ -18,31 +18,6 @@ def escalate(reason: str) -> str:
 	return "I am connecting you to a human agent who can assist with this request. They will be with you shortly!"
 
 
-def rewrite_query(original_query: str) -> str:
-	"""Fixes typos and contextualizes the query for RAG search."""
-	from langchain_google_genai import ChatGoogleGenerativeAI
-	from agent.config import GEMINI_API_KEY
-	from pydantic import BaseModel
-
-	class RewrittenQuery(BaseModel):
-		query: str
-
-	llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY)
-	structured_llm = llm.with_structured_output(RewrittenQuery)
-	prompt = (
-		"Rewrite the following search query to correct any spelling mistakes "
-		"and make it a clear, standalone search query for a knowledge base.\n\n"
-		f"Query: {original_query}"
-	)
-	try:
-		response = structured_llm.invoke(prompt)
-		corrected = response.query.strip() if response and response.query else original_query
-		print(f"[QueryRewriter] '{original_query}' -> '{corrected}'")
-		return corrected
-	except Exception as e:
-		print(f"[QueryRewriter] Failed: {e}, using original query")
-		return original_query
-
 @tool
 def search_knowledge_base(query: str) -> str:
 	"""
@@ -51,8 +26,10 @@ def search_knowledge_base(query: str) -> str:
 	Why it's needed: Use this when the user asks a general question about Unified Cloud, its services, policies, or pricing.
 	"""
 	from agent.rag import search_documents
-	corrected_query = rewrite_query(query)
-	result = search_documents(corrected_query)
+	# No separate query-rewrite LLM call: the calling model already writes a
+	# clean query, and the embedding + BM25 hybrid search tolerates typos. The
+	# old rewrite step hit a retired model (404) on every search.
+	result = search_documents(query)
 	return f"<context>\n{result}\n</context>"
 
 
