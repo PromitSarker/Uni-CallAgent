@@ -4,16 +4,19 @@ from agent.nodes import (
 	execute_tool_node,
 	format_response_node,
 	escalate_to_human_node,
-	summarize_conversation_node,
 )
 from agent.state import AgentState
 
 
 def should_continue(state: AgentState) -> str:
-	"""Route after the agent node: tool call → execute_tool, escalate flag → escalate, otherwise summarize."""
+	"""Route after the agent node: tool call → execute_tool, escalate flag → escalate, otherwise finish.
+
+	The conversation summary is no longer a graph step (it used to block the reply);
+	api.service runs it in the background after the response has been produced.
+	"""
 	messages = state.get("messages", [])
 	if not messages:
-		return "summarize"
+		return "done"
 
 	last_message = messages[-1]
 
@@ -25,7 +28,7 @@ def should_continue(state: AgentState) -> str:
 	if state.get("escalate"):
 		return "escalate"
 
-	return "summarize"
+	return "done"
 
 
 from langgraph.graph.state import CompiledStateGraph
@@ -38,7 +41,6 @@ def build_graph() -> CompiledStateGraph:
 	graph.add_node("execute_tool", execute_tool_node)
 	graph.add_node("format_response", format_response_node)
 	graph.add_node("escalate", escalate_to_human_node)
-	graph.add_node("summarize", summarize_conversation_node)
 
 	graph.set_entry_point("agent")
 
@@ -49,19 +51,16 @@ def build_graph() -> CompiledStateGraph:
 		{
 			"execute_tool": "execute_tool",
 			"escalate": "escalate",
-			"summarize": "summarize",
+			"done": END,
 		},
 	)
 
 	# After tools run, format the response into natural language
 	graph.add_edge("execute_tool", "format_response")
-	graph.add_edge("format_response", "summarize")
+	graph.add_edge("format_response", END)
 
-	# Escalation goes to summarize before ending
-	graph.add_edge("escalate", "summarize")
-	
-	# Summarize is the final step before END
-	graph.add_edge("summarize", END)
+	# Escalation ends the turn
+	graph.add_edge("escalate", END)
 
 	return graph.compile()
 

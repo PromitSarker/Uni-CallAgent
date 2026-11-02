@@ -1,5 +1,11 @@
 // audioQueue.js
 
+// How much audio must be buffered before a reply starts playing. Gemini streams
+// audio faster than real time, so a small buffer is enough to avoid stutter
+// (it was 500 ms, which added that much dead air to the start of every reply).
+// The end-of-turn flush() still starts short replies immediately.
+export const JITTER_BUFFER_SECONDS = 0.2;
+
 export class AudioQueue {
     constructor(context, { onPlaybackStart, onPlaybackEnd } = {}) {
         this.audioContext = context;
@@ -54,8 +60,8 @@ export class AudioQueue {
             // Check if we have enough audio buffered to start safely without stuttering
             const bufferedDuration = this.queue.reduce((acc, buffer) => acc + buffer.duration, 0);
             
-            // Jitter buffer threshold: strictly 500ms
-            if (bufferedDuration < 0.5) {
+            // Jitter buffer threshold (see JITTER_BUFFER_SECONDS)
+            if (bufferedDuration < JITTER_BUFFER_SECONDS) {
                 // Not enough buffer yet. We wait indefinitely for the next chunk,
                 // or until flush() is called when the turn completes.
                 return;

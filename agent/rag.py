@@ -16,6 +16,21 @@ CHROMA_PERSIST_DIR = os.path.join(os.path.dirname(__file__), "..", "chroma_db")
 _chroma_lock = threading.Lock()
 _bm25_retriever = None
 
+# Query-side embeddings client, created once and reused (it used to be rebuilt
+# on every search).
+try:
+    _query_embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001",
+        google_api_key=GEMINI_API_KEY,
+        task_type="retrieval_query"
+    )
+except Exception:
+    _query_embeddings = None
+
+# Whole-KB text cache for inlining into the voice prompt (see get_kb_text()).
+KB_CACHE_TTL_SECONDS = float(os.getenv("KB_CACHE_TTL_SECONDS", "30"))
+_kb_cache = {"text": None, "at": 0.0}
+
 # Initialize embeddings
 try:
     _embeddings = GoogleGenerativeAIEmbeddings(
@@ -84,6 +99,7 @@ def add_document(text: str, metadata: dict = None) -> list[str]:
 	with _chroma_lock:
 		_vectorstore.add_documents(documents=docs, ids=doc_ids)
 	
+	invalidate_kb_cache()
 	_refresh_bm25()
 	return doc_ids
 
@@ -94,6 +110,7 @@ def delete_document(doc_id: str) -> bool:
 	try:
 		with _chroma_lock:
 			_vectorstore.delete(ids=[doc_id])
+		invalidate_kb_cache()
 		_refresh_bm25()
 		return True
 	except ValueError:
@@ -107,24 +124,24 @@ def search_documents(query: str, k: int = 5) -> str:
 	
 	print(f"[RAG Search] Query: '{query}', k={k}")
 	
-	# 1. Dense Retriever setup (using custom query embeddings)
-	query_embeddings = GoogleGenerativeAIEmbeddings(
-		model="models/gemini-embedding-001",
-		google_api_key=GEMINI_API_KEY,
-		task_type="retrieval_query"
-	)
+	# 1. Dense Retriever (query embeddings client is created once at import)
+	query_embeddings = _query_embeddings
 	
 	vector_results = []
 	# Retry logic for embeddings API
 	for attempt in range(3):
 		try:
+			if query_embeddings is None:
+				raise RuntimeError("query embeddings client is not initialised")
 			embedded_query = query_embeddings.embed_query(query)
 			with _chroma_lock:
 				vector_results = _vectorstore.similarity_search_by_vector(embedded_query, k=k)
 			break
 		except Exception as e:
 			print(f"[RAG Search] Embeddings attempt {attempt + 1} failed: {e}")
-			time.sleep(2 ** attempt)
+			if attempt < 2:
+				# Back off between attempts only (no pointless sleep after the last one).
+				time.sleep(0.5 * (2 ** attempt))
 	
 	print(f"[RAG Search] Vector results: {len(vector_results)} docs")
 	for i, doc in enumerate(vector_results):
@@ -196,3 +213,44 @@ def list_documents() -> List[dict]:
 		})
 	
 	return documents
+
+
+def invalidate_kb_cache() -> None:
+	"""Drop the cached whole-KB text (called after documents change)."""
+	_kb_cache["text"] = None
+	_kb_cache["at"] = 0.0
+
+
+def get_kb_text(max_chars: int = 0):
+	"""Return the entire knowledge base as one prompt-ready string, or None.
+
+	Used to put the (small) KB straight into the voice agent's system prompt so
+	a spoken question needs no search round trip. Returns None when the KB is
+	empty/unavailable or larger than ``max_chars`` (0 = no limit); the caller
+	then falls back to the search tool. Cached for KB_CACHE_TTL_SECONDS so a new
+	call does not hit Chroma, while edits (also made by other worker processes)
+	show up within the TTL.
+	"""
+	if _vectorstore is None:
+		return None
+
+	now = time.monotonic()
+	cached = _kb_cache["text"]
+	if cached is None or now - _kb_cache["at"] > KB_CACHE_TTL_SECONDS:
+		try:
+			with _chroma_lock:
+				data = _vectorstore.get()
+		except Exception as e:
+			print(f"[RAG] get_kb_text failed: {e}")
+			return cached if cached else None
+		docs = [d.strip() for d in (data.get("documents") or []) if d and d.strip()]
+		cached = "\n\n".join(docs) if docs else ""
+		_kb_cache["text"] = cached
+		_kb_cache["at"] = now
+
+	if not cached:
+		return None
+	if max_chars and len(cached) > max_chars:
+		return None
+	return cached
+

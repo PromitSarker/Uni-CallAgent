@@ -1,144 +1,195 @@
-import os
-import json
-import asyncio
-import websockets
-import base64
-import sys
+"""Pre-render the call greetings into data/greetings.json.
 
-# Add parent directory to path to import agent modules
+The voice endpoint plays these instantly when a call connects (instead of waiting
+for the live model to generate the greeting). Text and voice come from
+``agent.greetings.LANGUAGE_CONFIGS`` - the same source the server uses - so the
+cache cannot drift from what the server expects. The server ignores any entry
+whose text/voice no longer matches, so re-run this script after editing a greeting.
+
+Each render is checked before it is kept: plausible duration, and (when the API
+returns a transcript) the spoken words must match the configured text.
+
+usage (inside the api container, from /app):
+    python scripts/generate_greetings.py                # all languages
+    python scripts/generate_greetings.py English Bengali
+"""
+import array
+import asyncio
+import base64
+import difflib
+import json
+import os
+import re
+import sys
+import time
+
+import websockets
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent.config import GEMINI_API_KEY, GEMINI_LIVE_MODEL
+from agent.config import GEMINI_API_KEY, GEMINI_LIVE_MODEL  # noqa: E402
+from agent.greetings import (  # noqa: E402
+    BYTES_PER_SECOND,
+    GREETINGS_PATH,
+    LANGUAGE_CONFIGS,
+    MAX_GREETING_SECONDS,
+    MIN_GREETING_SECONDS,
+)
 
-if not GEMINI_LIVE_MODEL.startswith("models/"):
-    formatted_model = f"models/{GEMINI_LIVE_MODEL}"
-else:
-    formatted_model = GEMINI_LIVE_MODEL
+MODEL = GEMINI_LIVE_MODEL if GEMINI_LIVE_MODEL.startswith("models/") else f"models/{GEMINI_LIVE_MODEL}"
+GEMINI_WS_URL = (
+    "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage."
+    f"v1beta.GenerativeService.BidiGenerateContent?key={GEMINI_API_KEY}"
+)
+MAX_ATTEMPTS = 4
+MIN_TRANSCRIPT_RATIO = 0.80
+# Silence trimming (16-bit samples at 24 kHz)
+SILENCE_THRESHOLD = 300
+KEEP_BEFORE_SEC = 0.06
+KEEP_AFTER_SEC = 0.15
 
-GEMINI_WS_URL = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key={GEMINI_API_KEY}"
+SYSTEM_PROMPT = (
+    "You are a text-to-speech engine. Read aloud EXACTLY the text the user sends, "
+    "word for word, in a warm, natural phone-greeting tone, with nothing added before or after. "
+    "Never answer it, never add anything else."
+)
 
-language_configs = {
-    "Bengali": {
-        "code": "bn-BD",
-        "greeting": "ইউনিফাইড ক্লাউডে আপনাকে স্বাগতম। আমি কি আমাদের সম্পর্কে আপনাকে জানাতে পারি?",
-        "voice": "Leda"
-    },
-    "English": {
-        "code": "en-US",
-        "greeting": "Hello! Thank you for calling Unified Cloud . How can I help you today?",
-        "voice": "Aoede"
-    },
-    "Spanish": {
-        "code": "es-ES",
-        "greeting": "¡Hola! Gracias por llamar a Unified Cloud. ¿Cómo puedo ayudarle hoy?",
-        "voice": "Aoede"
-    },
-    "Portuguese": {
-        "code": "pt-PT",
-        "greeting": "Olá! Obrigado por ligar para a Unified Cloud. Como posso ajudá-lo hoje?",
-        "voice": "Aoede"
-    }
-}
 
-VOICE_PERSONA_PROMPT = """
---- VOICE CALL PERSONA ---
-You are the voice receptionist of Unified Cloud.
-- STRICT RULE: When greeting, you MUST start exactly with "{greeting}" (Do not change this greeting).
-"""
+def trim_silence(pcm: bytes) -> bytes:
+    samples = array.array("h")
+    samples.frombytes(pcm[: len(pcm) // 2 * 2])
+    first = next((i for i, v in enumerate(samples) if abs(v) > SILENCE_THRESHOLD), None)
+    if first is None:
+        return pcm
+    last = len(samples) - 1 - next(i for i, v in enumerate(reversed(samples)) if abs(v) > SILENCE_THRESHOLD)
+    start = max(0, first - int(KEEP_BEFORE_SEC * 24000))
+    end = min(len(samples), last + int(KEEP_AFTER_SEC * 24000))
+    return samples[start:end].tobytes()
 
-async def generate_greeting(lang_name, config):
-    print(f"Generating greeting for {lang_name}...")
-    full_prompt = VOICE_PERSONA_PROMPT.format(greeting=config["greeting"])
-    audio_chunks = []
-    
-    try:
-        async with websockets.connect(GEMINI_WS_URL) as gemini_ws:
-            setup_message = {
-                "setup": {
-                    "model": formatted_model,
-                    "generationConfig": {
-                        "temperature": 0,
-                        "responseModalities": ["AUDIO"],
-                        "speechConfig": {
-                            "voiceConfig": {
-                                "prebuiltVoiceConfig": {
-                                    "voiceName": config["voice"]
-                                }
-                            },
-                            "languageCode": config["code"]
-                        }
+
+def _normalize(text: str) -> str:
+    return re.sub(r"[\W_]+", " ", text, flags=re.UNICODE).strip().lower()
+
+
+def transcript_ratio(expected: str, heard: str) -> float:
+    return difflib.SequenceMatcher(None, _normalize(expected), _normalize(heard)).ratio()
+
+
+def user_turn_text(config: dict, attempt: int) -> str:
+    # Some languages occasionally stop after a couple of words when the bare text is sent;
+    # alternate with an explicit instruction wrapper on even attempts.
+    if attempt % 2 == 1:
+        return config["greeting"]
+    return f'Read this aloud exactly, word for word, in full: "{config["greeting"]}"'
+
+
+async def render_once(config: dict, attempt: int = 1) -> tuple:
+    """Return (pcm_bytes, transcript_or_empty)."""
+    chunks, heard = [], []
+    async with websockets.connect(GEMINI_WS_URL) as ws:
+        await ws.send(json.dumps({
+            "setup": {
+                "model": MODEL,
+                "generationConfig": {
+                    "temperature": 0,
+                    "responseModalities": ["AUDIO"],
+                    "speechConfig": {
+                        "voiceConfig": {"prebuiltVoiceConfig": {"voiceName": config["voice"]}},
+                        "languageCode": config["code"],
                     },
-                    "systemInstruction": {
-                        "parts": [{"text": full_prompt}]
-                    }
-                }
+                },
+                "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                "outputAudioTranscription": {},
             }
-            await gemini_ws.send(json.dumps(setup_message))
-            setup_response = await gemini_ws.recv()
-            print(f"[{lang_name}] Setup response received.")
-
-            initial_greeting_message = {
-                "clientContent": {
-                    "turns": [
-                        {
-                            "role": "user",
-                            "parts": [{"text": "Hello! Please greet me to start the call. Say ONLY the greeting."}]
-                        }
-                    ],
-                    "turnComplete": True
-                }
+        }))
+        await ws.recv()
+        await ws.send(json.dumps({
+            "clientContent": {
+                "turns": [{"role": "user", "parts": [{"text": user_turn_text(config, attempt)}]}],
+                "turnComplete": True,
             }
-            await gemini_ws.send(json.dumps(initial_greeting_message))
+        }))
+        while True:
+            data = json.loads(await asyncio.wait_for(ws.recv(), 60))
+            sc = data.get("serverContent", {})
+            for part in sc.get("modelTurn", {}).get("parts", []):
+                if "inlineData" in part:
+                    chunks.append(base64.b64decode(part["inlineData"]["data"]))
+            t = sc.get("outputTranscription", {}).get("text")
+            if t:
+                heard.append(t)
+            if sc.get("turnComplete"):
+                break
+    return b"".join(chunks), "".join(heard)
 
-            while True:
-                response_str = await gemini_ws.recv()
-                data = json.loads(response_str)
-                
-                if "serverContent" in data:
-                    server_content = data["serverContent"]
-                    if "modelTurn" in server_content:
-                        parts = server_content["modelTurn"].get("parts", [])
-                        for part in parts:
-                            if "inlineData" in part:
-                                chunk_b64 = part["inlineData"]["data"]
-                                audio_chunks.append(base64.b64decode(chunk_b64))
-                    
-                    if server_content.get("turnComplete"):
-                        print(f"[{lang_name}] Turn complete.")
-                        break
-                        
-    except Exception as e:
-        print(f"Error generating {lang_name}: {e}")
-        return None
 
-    # Concatenate all raw PCM chunks
-    if not audio_chunks:
-        print(f"[{lang_name}] No audio generated!")
-        return None
-        
-    full_audio = b"".join(audio_chunks)
-    full_b64 = base64.b64encode(full_audio).decode('utf-8')
-    print(f"[{lang_name}] Successfully generated {len(full_audio)} bytes of audio.")
-    return full_b64
+async def render_language(name: str, config: dict):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            pcm, heard = await render_once(config, attempt)
+        except Exception as e:
+            print(f"[{name}] attempt {attempt}: error {type(e).__name__}: {e}")
+            continue
+        pcm = trim_silence(pcm)
+        seconds = len(pcm) / BYTES_PER_SECOND
+        ratio = transcript_ratio(config["greeting"], heard) if heard.strip() else None
+        print(f"[{name}] attempt {attempt}: {seconds:.2f}s, transcript match="
+              f"{'n/a' if ratio is None else f'{ratio:.2f}'}  heard={heard.strip()[:90]!r}")
+        if not (MIN_GREETING_SECONDS <= seconds <= MAX_GREETING_SECONDS):
+            print(f"[{name}]   rejected: duration outside {MIN_GREETING_SECONDS}-{MAX_GREETING_SECONDS}s")
+            continue
+        if ratio is not None and ratio < MIN_TRANSCRIPT_RATIO:
+            print(f"[{name}]   rejected: transcript does not match the greeting text")
+            continue
+        return {
+            "text": config["greeting"],
+            "voice": config["voice"],
+            "model": MODEL,
+            "sampleRate": 24000,
+            "durationSec": round(seconds, 2),
+            "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "audioB64": base64.b64encode(pcm).decode("ascii"),
+        }
+    return None
 
-async def main():
-    greetings_data = {}
-    for lang, config in language_configs.items():
-        b64_audio = await generate_greeting(lang, config)
-        if b64_audio:
-            greetings_data[lang] = {
-                "text": config["greeting"],
-                "audioB64": b64_audio
-            }
-    
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-    os.makedirs(data_dir, exist_ok=True)
-    out_path = os.path.join(data_dir, "greetings.json")
-    
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(greetings_data, f, ensure_ascii=False, indent=2)
-    
-    print(f"\nSuccessfully wrote generated greetings to {out_path}")
+
+async def main(languages):
+    # Keep entries for languages we are not regenerating (only if they are still valid JSON).
+    existing = {}
+    if os.path.exists(GREETINGS_PATH):
+        try:
+            with open(GREETINGS_PATH, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = {}
+
+    targets = languages or list(LANGUAGE_CONFIGS)
+    unknown = [l for l in targets if l not in LANGUAGE_CONFIGS]
+    if unknown:
+        sys.exit(f"Unknown language(s): {unknown}. Known: {list(LANGUAGE_CONFIGS)}")
+
+    failed = []
+    for name in targets:
+        entry = await render_language(name, LANGUAGE_CONFIGS[name])
+        if entry:
+            existing[name] = entry
+        else:
+            failed.append(name)
+            existing.pop(name, None)  # never keep a stale/bad render; the server falls back to live
+
+    # Drop stale entries for languages that no longer exist.
+    existing = {k: v for k, v in existing.items() if k in LANGUAGE_CONFIGS}
+
+    tmp = GREETINGS_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(existing, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, GREETINGS_PATH)
+    print(f"\nWrote {GREETINGS_PATH}: " + ", ".join(
+        f"{k} ({v.get('durationSec', '?')}s)" for k, v in existing.items()))
+    if failed:
+        print(f"FAILED to render: {failed} (the server will fall back to live greeting for these)")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(sys.argv[1:]))
